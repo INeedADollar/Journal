@@ -1,11 +1,11 @@
 #include "async_tasks.h"
 
-threadpool pool = thpool_init(100);
+static threadpool pool = thpool_init(100);
 
-void task_function(ServerMessage* message) {
+void task_function(MESSAGE* message) {
     
 }
 
-int create_threadpool_task_from_message(ServerMessage* message) {
+int create_threadpool_task_from_message(MESSAGE* message) {
 
 }

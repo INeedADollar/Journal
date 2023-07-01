@@ -53,3 +53,10 @@ dkms.conf
 
 #VS Code
 .vscode/
+
+# Test
+test
+test.c
+
+#Misc
+pcd.txt

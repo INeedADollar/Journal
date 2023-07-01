@@ -1,12 +1,9 @@
 #ifndef SERVER_QUEUE_H
 #define SERVER_QUEUE_H
 
-#include <stdlib.h>
+#include <server_messages.h>
 
-typedef struct Queue {
-    ServerMessage* messages[1000];
-    int length;
-} ServerQueue;
+void init_queue();
 
 int enqueue_message(ServerMessage* message);
 

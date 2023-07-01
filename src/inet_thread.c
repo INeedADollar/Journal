@@ -1,5 +1,6 @@
-#include "threads_functions.h"
+#include "inet_thread.h"
 #include "server_messages.h"
+#include "global.h"
 
 #include <stdio.h>		
 #include <stdlib.h>
@@ -12,14 +13,12 @@
 #include <sys/select.h>
 #include <signal.h>
 
-static int stop_threads = 0;
-
 int init_server() {										
-	int socket_fd;
+	int server_socket_fd;
 	struct sockaddr_in server_addr;
 	struct hostent* he;
 
-	if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {				
+	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {				
 		perror("The server socket cannot be open.");
 		return -1;
 	}
@@ -35,12 +34,12 @@ int init_server() {
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
 	server_addr.sin_port = htons(5000);
 
-	if (bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {        
+	if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {        
 		perror("Could not bind the server socket!");
 		return -1;
 	}
 	
-	return socket_fd;
+	return server_socket_fd;
 }
 
 void accept_and_connect_new_client(fd_set* active_set, int server_socket_fd) {					
@@ -62,36 +61,58 @@ void accept_and_connect_new_client(fd_set* active_set, int server_socket_fd) {
 
 void handle_socket_operation(fd_set* active_set, int client_socket_fd) {
     int received_len;
-	char line[512];
-	char response[512];
+	char line[100];
+	char* response;
 	
-	received_len = recv(*client_socket_fd, &line, 512, 0);
+	received_len = recv(*client_socket_fd, &line, 100, 0);
+
+    MESSAGE_HEADER* header = parse_header(line);
+    if(header == NULL) {
+        return;
+    }
+
+	switch (header->message_type) {
+	case CREATE_JOURNAL:
+		break;
+    case RETRIEVE_JOURNAL:
+		break;
+    case IMPORT_JOURNAL:
+		break;
+    case MODIFY_JOURNAL:
+		break;
+    case DELETE_JOURNAL:
+		break;
+    case DISCONNECT_CLIENT:
+		break;
+	default:
+		break;
+	}
 }
 
 void inet_thread() {
     fd_set active_sockets_set, read_sockets_set;
-    int socket_fd = init_server();
+    int server_socket_fd = init_server();
 	
-	if(socket_fd < 0) {
+	if(server_socket_fd < 0) {
 		pthread_exit(NULL);
 	}
 
     FD_ZERO(&active_sockets_set);
-    FD_SET(socket_fd, &active_sockets_set);
+    FD_SET(server_socket_fd, &active_sockets_set);
 
-	listen(socket_fd, 5);	
+	listen(server_socket_fd, 5);	
 	puts("Waiting for clients to connect...");	
 
-	while(!stop_threads) {
+	while(!STOP_SERVER) {
         read_sockets_set = active_sockets_set;
-        if(select (FD_SETSIZE, &read_sockets_set, NULL, NULL, NULL) < 0) {
+        if(select(FD_SETSIZE, &read_sockets_set, NULL, NULL, NULL) < 0) {
             pthread_exit (NULL);
         }
 
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if(FD_ISSET(fd, &read_sockets_set)) {
-                if(fd == socket_fd) {
-                    accept_and_connect_new_client(&active_sockets_set, socket_fd);
+                if(fd == server_socket_fd) {
+                    accept_and_connect_new_client(&active_sockets_set, server_socket_fd);
                 }
                 else {
                     handle_connection_operation(&active_sockets_set, fd);
