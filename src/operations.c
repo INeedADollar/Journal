@@ -89,6 +89,21 @@ void create_journal(MESSAGE_HEADER message_header, char* message_part, int socke
 }
 
 
+void retrieve_journal(MESSAGE* message) {
+
+}
+
+
+void import_journal(MESSAGE* message) {
+
+}
+
+
+void modify_journal(MESSAGE* message) {
+
+}
+
+
 void delete_journal(int socket_fd){
     char dirname[512];
     char read_message[1024];

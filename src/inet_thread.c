@@ -1,5 +1,7 @@
 #include "inet_thread.h"
 #include "server_messages.h"
+#include "async_tasks.h"
+#include "read_tasks.h"
 #include "global.h"
 #include "operations.h"
 
@@ -61,15 +63,24 @@ OPERATION_STATUS accept_new_client(fd_set* active_set, int server_socket_fd) {
 	return OPERATION_SUCCESS;
 }
 
+void create_read_task(MESSAGE_HEADER* header, char* line, int client_socket_id) {
+	READ_BIG_MESSAGE_TASK_ARGS* args = (READ_BIG_MESSAGE_TASK_ARGS*)malloc(sizeof(READ_BIG_MESSAGE_TASK_ARGS));
+	args->header = header;
+	args->initial_read_message = line;
+	args->client_fd = client_socket_fd;
+
+	return create_read_big_message_task(args);
+}
+
 OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_fd) {
     int received_len;
-	char line[100];
-	char* response;
+	char* line = (char*)malloc(100);
 	
 	received_len = recv(*client_socket_fd, &line, 100, 0);
 
     MESSAGE_HEADER* header = parse_header(line);
     if(header == NULL) {
+		// TODO return type
         return;
     }
 
@@ -82,10 +93,9 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 		create_journal(header, line, client_socket_fd);
 		break;
     case RETRIEVE_JOURNAL:
-		break;
     case IMPORT_JOURNAL:
-		break;
     case MODIFY_JOURNAL:
+		create_read_task(header, line, client_socket_fd);
 		break;
     case DELETE_JOURNAL:
 		delete_journal(client_socket_fd);
@@ -100,6 +110,17 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 	return status;
 }
 
+void check_queue_thread(void* args) {
+	while(!STOP_SERVER) {
+		if(tasks_running_count() < 100) {
+			MESSAGE* message = dequeue_message();
+			if(message) {
+				create_async_task(message);
+			}
+		}
+	}
+}
+
 void inet_thread() {
     fd_set active_sockets_set, read_sockets_set;
     int server_socket_fd = init_server();
@@ -111,8 +132,16 @@ void inet_thread() {
     FD_ZERO(&active_sockets_set);
     FD_SET(server_socket_fd, &active_sockets_set);
 
-	listen(server_socket_fd, 5);	
+	if(listen(server_socket_fd, 5) < 0) {
+		pthread_exit(NULL);
+	}	
+
 	puts("Waiting for clients to connect...");	
+
+	pthread_t thread_id;
+	if(pthread_create(&thread_id, (pthread_attr_t*)NULL, (void * (*)(void *))check_queue_thread, (void*)NULL) != 0) {
+		pthread_exit(NULL);
+	}	
 
 	while(!STOP_SERVER) {
         read_sockets_set = active_sockets_set;
