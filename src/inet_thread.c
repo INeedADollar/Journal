@@ -1,6 +1,7 @@
 #include "inet_thread.h"
 #include "server_messages.h"
 #include "global.h"
+#include "operations.h"
 
 #include <stdio.h>		
 #include <stdlib.h>
@@ -74,7 +75,11 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 
 	OPERATION_STATUS status = OPERATION_SUCCESS;
 	switch (header->message_type) {
+	case GENERATE_ID:
+		generate_id(client_socket_fd);
+		break;
 	case CREATE_JOURNAL:
+		create_journal(header, line, client_socket_fd);
 		break;
     case RETRIEVE_JOURNAL:
 		break;
@@ -83,10 +88,10 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
     case MODIFY_JOURNAL:
 		break;
     case DELETE_JOURNAL:
-		break;
-	case CONNECT_CLIENT:
+		delete_journal(client_socket_fd);
 		break;
     case DISCONNECT_CLIENT:
+		disconnect_client(header, client_socket_fd);
 		break;
 	default:
 		break;
