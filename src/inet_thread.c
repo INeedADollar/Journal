@@ -13,20 +13,20 @@
 #include <sys/select.h>
 #include <signal.h>
 
-int init_server() {										
+OPERATION_STATUS init_server() {										
 	int server_socket_fd;
 	struct sockaddr_in server_addr;
 	struct hostent* he;
 
 	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {				
 		perror("The server socket cannot be open.");
-		return -1;
+		return OPERATION_FAIL;
 	}
 
     int reuse_address = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_address, 4) < 0) {
         perror("Cannot set reuse address option on socket.");
-        return -1;
+        return OPERATION_FAIL;
     }
 
 	bzero((char*)&server_addr, sizeof(server_addr));
@@ -36,13 +36,13 @@ int init_server() {
 
 	if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {        
 		perror("Could not bind the server socket!");
-		return -1;
+		return OPERATION_SUCCESS;
 	}
 	
 	return server_socket_fd;
 }
 
-void accept_and_connect_new_client(fd_set* active_set, int server_socket_fd) {					
+OPERATION_STATUS accept_new_client(fd_set* active_set, int server_socket_fd) {					
 	int client_addr_len, client_socket_fd;
 	struct sockaddr_in client_addr;
 	
@@ -52,14 +52,15 @@ void accept_and_connect_new_client(fd_set* active_set, int server_socket_fd) {
 
 	if (client_socket_fd < 0) {
 	  perror("Connection with client failed");
-	  exit(-1);
+	  return OPERATION_FAIL;
 	}
 	
 	printf("Client %d connected.\n", client_socket_fd);
     FD_SET(client_socket_fd, &active_fd_set);
+	return OPERATION_SUCCESS;
 }
 
-void handle_socket_operation(fd_set* active_set, int client_socket_fd) {
+OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_fd) {
     int received_len;
 	char line[100];
 	char* response;
@@ -71,6 +72,7 @@ void handle_socket_operation(fd_set* active_set, int client_socket_fd) {
         return;
     }
 
+	OPERATION_STATUS status = OPERATION_SUCCESS;
 	switch (header->message_type) {
 	case CREATE_JOURNAL:
 		break;
@@ -82,11 +84,15 @@ void handle_socket_operation(fd_set* active_set, int client_socket_fd) {
 		break;
     case DELETE_JOURNAL:
 		break;
+	case CONNECT_CLIENT:
+		break;
     case DISCONNECT_CLIENT:
 		break;
 	default:
 		break;
 	}
+
+	return status;
 }
 
 void inet_thread() {
@@ -106,13 +112,13 @@ void inet_thread() {
 	while(!STOP_SERVER) {
         read_sockets_set = active_sockets_set;
         if(select(FD_SETSIZE, &read_sockets_set, NULL, NULL, NULL) < 0) {
-            pthread_exit (NULL);
+            pthread_exit(NULL);
         }
 
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if(FD_ISSET(fd, &read_sockets_set)) {
                 if(fd == server_socket_fd) {
-                    accept_and_connect_new_client(&active_sockets_set, server_socket_fd);
+                    accept_new_client(&active_sockets_set, server_socket_fd);
                 }
                 else {
                     handle_connection_operation(&active_sockets_set, fd);

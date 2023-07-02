@@ -1,6 +1,6 @@
-#ifndef THREADS_FUNCTIONS_H
-#define THREADS_FUNCTIONS_H
+#ifndef INET_THREAD_H
+#define INET_THREAD_H
 
 void inet_thread();
 
-#endif // THREADS_FUNCTIONS_H
+#endif // INET_THREAD_H

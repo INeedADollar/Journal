@@ -2,8 +2,8 @@
 #define GLOBAL_H
 
 typedef enum {
-    OPERATION_SUCCESS,
-    OPERATION_FAIL
+    OPERATION_SUCCESS = 0,
+    OPERATION_FAIL = -1
 } OPERATION_STATUS;
 
 static int STOP_SERVER = 0;

@@ -9,15 +9,15 @@ typedef struct {
 
 static SERVER_QUEUE* queue = calloc(sizeof(MESSAGE));
 
-int enqueue_message(MESSAGE* message) {
+OPERATION_STATUS enqueue_message(MESSAGE* message) {
     if(queue->length < 1000) {
         queue->messages[queue->length] = message;
         queue->length++;
 
-        return 0;
+        return OPERATION_SUCCESS;
     }
 
-    return -1;
+    return OPERATION_FAIL;
 }
 
 MESSAGE* dequeue_message() {

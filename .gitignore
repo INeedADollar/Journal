@@ -54,6 +54,9 @@ dkms.conf
 #VS Code
 .vscode/
 
+# Glade Autosave
+*.glade~
+
 # Test
 test
 test.c

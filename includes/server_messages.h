@@ -1,7 +1,7 @@
 #ifndef SERVER_MESSAGES_H
 #define SERVER_MESSAGES_H
 
-typedef long int CLIENT_ID;
+typedef long int CLIENT_ID, MESSAGE_ID;
 typedef int MESSAGE_LENGTH;
 
 typedef enum {
@@ -10,18 +10,21 @@ typedef enum {
     IMPORT_JOURNAL,
     MODIFY_JOURNAL,
     DELETE_JOURNAL,
+    CONNECT_CLIENT,
+    CONNECT_CLIENT,
     DISCONNECT_CLIENT
 } MESSAGE_TYPES;
 
 typedef struct {
-    MESSAGE_LENGTH message_length;
     MESSAGE_TYPES message_type;
+    MESSAGE_LENGTH message_length;
+    CLIENT_ID client_id;
 } MESSAGE_HEADER;
 
 typedef char* MESSAGE_CONTENT;
 
 typedef struct Message {
-    CLIENT_ID id;
+    MESSAGE_ID id;
     MESSAGE_HEADER* header;
     MESSAGE_CONTENT* content;
 } MESSAGE;
