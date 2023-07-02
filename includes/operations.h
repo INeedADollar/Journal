@@ -3,10 +3,19 @@
 
 #include "server_messages.h"
 
+void generate_id();
+
+void create_journal();
+
 void retrieve_journal(MESSAGE* message);
 
 void import_hournal(MESSAGE* message);
 
 void modify_journal(MESSAGE* message);
+
+void delete_journal();
+
+void disconnect_client();
+
 
 #endif // OPERATIONS_H
