@@ -3,9 +3,11 @@
 #include <stdio.h>
 
 MESSAGE_HEADER* parse_header(char* partial_message) {
-    int message_type, message_length;
+    int message_type, message_length, user_id;
 
-    int res = sscanf(partial_message, "Header\nmessage-type<::::>%d\nmessage-length<::::>%d", &message_type, &message_length);
+    int res = sscanf(partial_message, "Header\nmessage-type<::::>%d\nmessage-length<::::>%d\nuser-id<::::>%d", 
+        &message_type, &message_length, &user_id);
+    
     if(res < 2) {
         return NULL;
     }
@@ -13,6 +15,7 @@ MESSAGE_HEADER* parse_header(char* partial_message) {
     MESSAGE_HEADER* header = malloc(sizeof(MESSAGE_HEADER));
     header->message_type = message_type;
     header->message_length = message_length;
+    header->user_id = user_id;
 
     return header;
 }
