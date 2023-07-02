@@ -34,3 +34,8 @@ MESSAGE* parse_message(int socket_fd, char* message) {
 
     return server_message;
 }
+
+void delete_message(MESSAGE* message) {
+    free(message->header);
+    free(message);
+}

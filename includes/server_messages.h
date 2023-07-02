@@ -33,4 +33,6 @@ MESSAGE_HEADER* parse_header(char* partial_message);
 
 MESSAGE* parse_message(int socked_fd, char* message);
 
+void delete_message(MESSAGE* message);
+
 #endif // SERVER_MESSAGES_H

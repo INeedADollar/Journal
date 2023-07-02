@@ -80,14 +80,14 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 
     MESSAGE_HEADER* header = parse_header(line);
     if(header == NULL) {
-		// TODO return type
-        return;
+		printf("Could not parse header from: %s, client_id: %d", line, client_socket_fd);
+        return OPERATION_FAIL;
     }
 
 	OPERATION_STATUS status = OPERATION_SUCCESS;
 	switch (header->message_type) {
 	case GENERATE_ID:
-		generate_id(client_socket_fd);
+		generate_id(header, client_socket_fd);
 		break;
 	case CREATE_JOURNAL:
 		create_journal(header, line, client_socket_fd);
@@ -98,7 +98,7 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 		create_read_task(header, line, client_socket_fd);
 		break;
     case DELETE_JOURNAL:
-		delete_journal(client_socket_fd);
+		delete_journal(header, client_socket_fd);
 		break;
     case DISCONNECT_CLIENT:
 		disconnect_client(header, client_socket_fd);
@@ -107,6 +107,7 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 		break;
 	}
 
+	free(line);
 	return status;
 }
 

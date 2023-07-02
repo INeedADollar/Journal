@@ -38,9 +38,10 @@ void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
         enqueue_message(message);
     }
 
-    free(read_message);
+    free(args->header);
+    free(args);
 }
 
 OPERATION_STATUS create_read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
-    thpool_add_work(message_tasks, (void*)read_big_message_task, (void*)args);
+    return (OPERATION_STATUS)thpool_add_work(message_tasks, (void*)read_big_message_task, (void*)args);
 }
