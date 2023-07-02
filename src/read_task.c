@@ -14,15 +14,12 @@ void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
 
     char read_part[strlen(args->initial_read_message)];
     strcpy(read_part, args->initial_read_message);
-    strcat(args->initial_read_message, "\0");
 
     char* content_read = strstr(read_part, "Content\n");
     int header_len = 0;
 
     if(content_read) {
         total_received = strlen(content_read) - 8;
-
-        *content_read = '\0';
         header_len = strlen(content_read) + 8;
     }
 
@@ -33,6 +30,7 @@ void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
         strcat(read_message, part);
     }
 
+    read_message[total_received] = '\0';
     MESSAGE* message = parse_message(read_message);
     if(message) {
         enqueue_message(message);

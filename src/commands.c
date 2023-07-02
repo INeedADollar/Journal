@@ -6,6 +6,7 @@
 #include <string.h>
 #include <zip/src/zip.h>
 #include <errno.h>
+#include <regex.h>
 
 #define CHECK_FOR_FAIL_AND_SEND_MESSAGE(variable, error, message, content, console_error, ...) \
     if(!variable || variable == OPERATION_FAIL) { \
@@ -26,7 +27,9 @@ void create_and_send_response(MESSAGE* message, char* content) {
 
 void read_all_message(int socket_fd, char* message, char* read_part) {
     char line[512];
-    recv(socket_fd, &line, 512, 0);
+    size_t received = recv(socket_fd, &line, 512, 0);
+    line[received] = "\0";
+
     sprintf(message, "%s%s", read_part, line);
 }
 
@@ -95,31 +98,149 @@ OPERATION_STATUS retrieve_journal(MESSAGE* message) {
     CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
         "The journal %s could not be found! Error: %s\n", journal_path);
 
-    void *buf = NULL;
-    size_t bufsize;
-
+    char* content = NULL;
+    int total_content_size = 0;
     struct zip_t *zip = zip_open("foo.zip", 0, 'r');
 
-    int i, n = zip_entries_total(zip);
+    int total_entries = zip_entries_total(zip);
+    for(int i = 0; i < total_entries; i++) {
+        if(zip_entry_isdir(zip)) {
+            continue;
+        }
+
+        zip_entry_openbyindex(zip, i);
+
+        unsigned long long size = zip_entry_size(zip);
+        char entry_content[size];
+        size_t entry_content_size;
+
+        zip_entry_read(zip, &entry_content, &entry_content_size);
+        if(!content) {
+            content = (char*)malloc(entry_content_size);
+        }
+        else {
+            content = (char*)realloc(content, total_content_size + entry_content_size);
+        }
+
+        strcpy(content + total_content_size, entry_content);
+
+
+        zip_entry_close(zip);
+        free(buf);
+    }
     zip_entry_open(zip, ".txt");
-    zip_entry_read(zip, &buf, &bufsize);
-    zip_entry_close(zip);
+    
+
 
     zip_close(zip);
 
-    free(buf);
+ 
     sprintf(content, "status=%d\nmessage=%s\n", OPERATION_SUCCESS, "Journal created successfully.");
     create_and_send_response(message, content);
 }
 
 
 OPERATION_STATUS import_journal(MESSAGE* message) {
-    delete_message(message);
+        char* journal_name = strstr(message->content, "=");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_name, "Journal name is invalid or missing.", message, content);
+
+    char journal_path[1024];
+    sprintf(journal_path, "./journals/%d/%s.zip", message->header->user_id, journal_name);
+    struct zip_t zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, "r");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
+        "The journal %s could not be found! Error: %s\n", journal_path);
+
+    char* content = NULL;
+    int total_content_size = 0;
+    struct zip_t *zip = zip_open("foo.zip", 0, 'r');
+
+    int total_entries = zip_entries_total(zip);
+    for(int i = 0; i < total_entries; i++) {
+        if(zip_entry_isdir(zip)) {
+            continue;
+        }
+
+        zip_entry_openbyindex(zip, i);
+
+        unsigned long long size = zip_entry_size(zip);
+        char entry_content[size];
+        size_t entry_content_size;
+
+        zip_entry_read(zip, &entry_content, &entry_content_size);
+        if(!content) {
+            content = (char*)malloc(entry_content_size);
+        }
+        else {
+            content = (char*)realloc(content, total_content_size + entry_content_size);
+        }
+
+        strcpy(content + total_content_size, entry_content);
+
+
+        zip_entry_close(zip);
+        free(buf);
+    }
+    zip_entry_open(zip, ".txt");
+    
+
+
+    zip_close(zip);
+
+ 
+    sprintf(content, "status=%d\nmessage=%s\n", OPERATION_SUCCESS, "Journal created successfully.");
+    create_and_send_response(message, content);
 }
 
 
 OPERATION_STATUS modify_journal(MESSAGE* message) {
-    delete_message(message);
+        char* journal_name = strstr(message->content, "=");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_name, "Journal name is invalid or missing.", message, content);
+
+    char journal_path[1024];
+    sprintf(journal_path, "./journals/%d/%s.zip", message->header->user_id, journal_name);
+    struct zip_t zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, "r");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
+        "The journal %s could not be found! Error: %s\n", journal_path);
+
+    char* content = NULL;
+    int total_content_size = 0;
+    struct zip_t *zip = zip_open("foo.zip", 0, 'r');
+
+    int total_entries = zip_entries_total(zip);
+    for(int i = 0; i < total_entries; i++) {
+        if(zip_entry_isdir(zip)) {
+            continue;
+        }
+
+        zip_entry_openbyindex(zip, i);
+
+        unsigned long long size = zip_entry_size(zip);
+        char entry_content[size];
+        size_t entry_content_size;
+
+        zip_entry_read(zip, &entry_content, &entry_content_size);
+        if(!content) {
+            content = (char*)malloc(entry_content_size);
+        }
+        else {
+            content = (char*)realloc(content, total_content_size + entry_content_size);
+        }
+
+        strcpy(content + total_content_size, entry_content);
+
+
+        zip_entry_close(zip);
+        free(buf);
+    }
+    zip_entry_open(zip, ".txt");
+    
+
+
+    zip_close(zip);
+
+ 
+    sprintf(content, "status=%d\nmessage=%s\n", OPERATION_SUCCESS, "Journal created successfully.");
+    create_and_send_response(message, content);
 }
 
 

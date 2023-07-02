@@ -1,5 +1,5 @@
-#ifndef OPERATIONS_H
-#define OPERATIONS_H
+#ifndef COMMANDS_H
+#define COMMANDS_H
 
 #include "server_messages.h"
 #include "global.h"
@@ -18,4 +18,4 @@ OPERATION_STATUS delete_journal(MESSAGE_HEADER* message_header, char* message_pa
 
 OPERATION_STATUS disconnect_client(MESSAGE_HEADER* header, int sochet_fd);
 
-#endif // OPERATIONS_H
+#endif // COMMANDS_H

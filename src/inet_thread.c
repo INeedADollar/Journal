@@ -77,7 +77,8 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 	char* line = (char*)malloc(100);
 	
 	received_len = recv(*client_socket_fd, &line, 100, 0);
-
+	line[received_len] = '\0';
+	
     MESSAGE_HEADER* header = parse_header(line);
     if(header == NULL) {
 		printf("Could not parse header from: %s, client_id: %d", line, client_socket_fd);
