@@ -16,19 +16,20 @@
 #include <sys/select.h>
 #include <signal.h>
 
+
 OPERATION_STATUS init_server() {										
 	int server_socket_fd;
 	struct sockaddr_in server_addr;
 	struct hostent* he;
 
 	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {				
-		perror("The server socket cannot be open.");
+		perror("The server socket cannot be open. Error: ");
 		return OPERATION_FAIL;
 	}
 
     int reuse_address = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_address, 4) < 0) {
-        perror("Cannot set reuse address option on socket.");
+        perror("Cannot set reuse address option on socket. Error: ");
         return OPERATION_FAIL;
     }
 
@@ -38,12 +39,13 @@ OPERATION_STATUS init_server() {
 	server_addr.sin_port = htons(5000);
 
 	if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {        
-		perror("Could not bind the server socket!");
-		return OPERATION_SUCCESS;
+		perror("Could not bind the server socket! Error: ");
+		return OPERATION_FAIL;
 	}
 	
 	return server_socket_fd;
 }
+
 
 OPERATION_STATUS accept_new_client(fd_set* active_set, int server_socket_fd) {					
 	int client_addr_len, client_socket_fd;
@@ -54,16 +56,17 @@ OPERATION_STATUS accept_new_client(fd_set* active_set, int server_socket_fd) {
 	client_socket_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);		
 
 	if (client_socket_fd < 0) {
-	  perror("Connection with client failed");
+	  perror("Connection with client failed, Error: ");
 	  return OPERATION_FAIL;
 	}
 	
 	printf("Client %d connected.\n", client_socket_fd);
-    FD_SET(client_socket_fd, &active_fd_set);
+    FD_SET(client_socket_fd, &active_set);
 	return OPERATION_SUCCESS;
 }
 
-void create_read_task(MESSAGE_HEADER* header, char* line, int client_socket_id) {
+
+OPERATION_STATUS create_read_task(MESSAGE_HEADER* header, char* line, int client_socket_fd) {
 	READ_BIG_MESSAGE_TASK_ARGS* args = (READ_BIG_MESSAGE_TASK_ARGS*)malloc(sizeof(READ_BIG_MESSAGE_TASK_ARGS));
 	args->header = header;
 	args->initial_read_message = line;
@@ -72,7 +75,19 @@ void create_read_task(MESSAGE_HEADER* header, char* line, int client_socket_id) 
 	return create_read_big_message_task(args);
 }
 
-OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_fd) {
+
+char* read_all_message(int socket_fd, char* read_part) {
+	char read_message = (char*)malloc(1024);
+    char line[512];
+
+    size_t received = recv(socket_fd, &line, 512, 0);
+    line[received] = "\0";
+
+    sprintf(read_message, "%s%s", read_part, line);
+	return read_message;
+}
+
+OPERATION_STATUS handle_client_operation(fd_set* active_set, int client_socket_fd) {
     int received_len;
 	char* line = (char*)malloc(100);
 	
@@ -81,34 +96,43 @@ OPERATION_STATUS handle_socket_operation(fd_set* active_set, int client_socket_f
 	
     MESSAGE_HEADER* header = parse_header(line);
     if(header == NULL) {
-		printf("Could not parse header from: %s, client_id: %d", line, client_socket_fd);
+		fprintf(stderr, "Could not parse header from: %s, client_socket_id: %d", line, client_socket_fd);
         return OPERATION_FAIL;
     }
 
+	if(header->message_type == RETRIEVE_JOURNAL || header->message_type == IMPORT_JOURNAL || header->message_type == MODIFY_JOURNAL) {
+		return create_read_task(header, line, client_socket_fd);
+	}
+
 	OPERATION_STATUS status = OPERATION_SUCCESS;
+	char* message_str = read_all_message(client_socket_fd, line);
+	MESSAGE* message = parse_message(client_socket_fd, message_str);
+	if(message == NULL) {
+		fprintf(stderr, "Could not parse message from: %s, user_id: %lu, client_socket_id: %d", message_str, header->user_id, client_socket_fd);
+	}
+
 	switch (header->message_type) {
 	case GENERATE_ID:
-		generate_id(header, client_socket_fd);
+		status = generate_id(message);
 		break;
 	case CREATE_JOURNAL:
-		create_journal(header, line, client_socket_fd);
-		break;
-    case RETRIEVE_JOURNAL:
-    case IMPORT_JOURNAL:
-    case MODIFY_JOURNAL:
-		create_read_task(header, line, client_socket_fd);
+		status = create_journal(message);
 		break;
     case DELETE_JOURNAL:
-		delete_journal(header, client_socket_fd);
+		status = delete_journal(message);
 		break;
     case DISCONNECT_CLIENT:
-		disconnect_client(header, client_socket_fd);
+		status = disconnect_client(message);
 		break;
 	default:
 		break;
 	}
 
 	free(line);
+	free(message_str);
+	free(header);
+	delete_message(message);
+
 	return status;
 }
 
@@ -157,7 +181,7 @@ void inet_thread() {
                     accept_new_client(&active_sockets_set, server_socket_fd);
                 }
                 else {
-                    handle_connection_operation(&active_sockets_set, fd);
+                    handle_client_operation(&active_sockets_set, fd);
                 }
             }
         }					

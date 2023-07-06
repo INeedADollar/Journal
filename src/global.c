@@ -12,7 +12,7 @@ void send_message(MESSAGE* message) {
     
     int res = send(message->id / 1000, response, strlen((char*)response), 0);
     if(res == OPERATION_FAIL) {
-        perror("Could not send message:")
+        perror("Could not send message. Error:")
     }
     else {
         printf("Message %s sent succesfully to client with id %d.\n", response, message->header->user_id);

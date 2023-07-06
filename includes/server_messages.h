@@ -21,9 +21,24 @@ typedef struct {
     USER_ID user_id;
 } MESSAGE_HEADER;
 
-typedef char* MESSAGE_CONTENT;
+typedef char* MESSAGE_CONTENT_NODE_KEY;
 
-typedef struct Message {
+typedef struct {
+    void* node_value;
+    size_t size;
+} MESSAGE_CONTENT_NODE_VALUE;
+
+typedef struct {
+    MESSAGE_CONTENT_NODE_KEY key;
+    MESSAGE_CONTENT_NODE_VALUE* value;
+    MESSAGE_CONTENT_NODE* next;
+} MESSAGE_CONTENT_NODE;
+
+typedef struct {
+    MESSAGE_CONTENT_NODE* head;
+} MESSAGE_CONTENT;
+
+typedef struct {
     MESSAGE_ID id;
     MESSAGE_HEADER* header;
     MESSAGE_CONTENT* content;
@@ -34,5 +49,7 @@ MESSAGE_HEADER* parse_header(char* partial_message);
 MESSAGE* parse_message(int socked_fd, char* message);
 
 void delete_message(MESSAGE* message);
+
+MESSAGE_CONTENT* create_message_content(char* keys[], char* values[]);
 
 #endif // SERVER_MESSAGES_H
