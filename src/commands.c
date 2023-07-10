@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "logger.h"
 #include "server_messages.h"
 
 #include <stdlib.h>
@@ -8,23 +9,25 @@
 #include <errno.h>
 #include <regex.h>
 
+
 #define CHECK_FOR_FAIL_AND_SEND_MESSAGE(variable, message_error, type, console_error, ...) \
     if(!variable || variable == OPERATION_FAIL) { \
-        fprintf(stderr, console_error, __VA_ARGS__, strerror(errno)); \
+        LOG_ERROR(console_error, __VA_ARGS__, strerror(errno)); \
         send_status_message(message_error, type, OPERATION_FAIL); \
         return OPERATION_FAIL; \
     } \
 
 
-OPERATION_STATUS send_response(MESSAGE* message) {
-    OPERATION_STATUS status = send_message(message);
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, )
-    delete_message(message);
+OPERATION_STATUS send_response(MESSAGE* response) {
+    OPERATION_STATUS status = send_message(response);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Error processing your request.", response->header->message_type, 
+        "Response for message with type %d could not be sent. Error: %s", response->header->message_type)
+    delete_message(response);
     return status;
 }
 
 
-void send_status_message(char* message_str, MESSAGE_TYPES type, OPERATION_STATUS status) {
+void send_status_message(USER_ID id, char* message_str, MESSAGE_TYPES type, OPERATION_STATUS status) {
     char* keys[] = {
         "status",
         "message"
@@ -41,11 +44,12 @@ void send_status_message(char* message_str, MESSAGE_TYPES type, OPERATION_STATUS
     MESSAGE* response_message = (MESSAGE*)calloc(sizeof(MESSAGE));
     response_message->header = (MESSAGE_HEADER*)malloc(sizeof(MESSAGE_HEADER));
     response_message->header->message_type = type;
+    response_message->header->user_id = id;
     
     MESSAGE_CONTENT* content = create_message_content(keys, 2, values, 2);
     response_message->content = content;
 
-    
+    send_response(response_message);
 }
 
 
@@ -65,18 +69,13 @@ MESSAGE_CONTENT_NODE_VALUE* extract_value_from_content(MESSAGE_CONTENT* content,
 }
 
 
-OPERATION_STATUS generate_id(MESSAGE* message){
+OPERATION_STATUS generate_id(MESSAGE* message) {
+    char message[50];
     USER_ID new_id = time(NULL) + (random() % 1000);
-    MESSAGE* message = (MESSAGE*)calloc(sizeof(MESSAGE));
-    
-    MESSAGE_HEADER* message_header = (MESSAGE_HEADER*)malloc(sizeof(MESSAGE_HEADER));
-    message_header->message_type = GENERATE_ID;
-    message_header->user_id = new_id;
 
-    message->header = message_header;
-    message->content = NULL;
+    sprintf(message, "Generated id is %lu", new_id);
+    send_status_message(new_id, message, GENERATE_ID, OPERATION_SUCCESS);
 
-    send_response(message);
     return OPERATION_SUCCESS;
 }
 
