@@ -88,6 +88,8 @@ char* read_all_message(int socket_fd, char* read_part) {
 }
 
 OPERATION_STATUS handle_client_operation(fd_set* active_set, int client_socket_fd) {
+	LOG_DEBUG("Entering handle_client_operation");
+	
     int received_len;
 	char* line = (char*)malloc(100);
 	

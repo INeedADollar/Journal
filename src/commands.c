@@ -80,40 +80,34 @@ OPERATION_STATUS generate_id(MESSAGE* message) {
 }
 
 
-OPERATION_STATUS create_journal(MESSAGE_HEADER* header, char* message_part, int socket_fd){
-    char read_message[1024];
+OPERATION_STATUS create_journal(MESSAGE* message){
     char response_content[512]; 
-    USER_ID user_id;
-
-    free(header);
-    read_all_message(socket_fd, read_message, message_part);
-
-    MESSAGE* message = parse_message(socket_fd, read_message);
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(message, "Recieved message is invalid.", message,
-        "Received message %s from user with id %lu is invalid. Error %s\n", read_message, message->header->user_id);
-
-    MESSAGE_CONTENT_NODE_VALUE* journal_name = extract_value_from_content(message->content, "journal-name");
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_name, "Journal name is invalid or missing.", message,
-        "Journal name %s is invalid for user with id %lu. Error: %s\n", journal_name, message->header->user_id);
-
-    char dirname[512];
-    sprintf(dirname, "%lu", user_id);
-    OPERATION_STATUS status = (OPERATION_STATUS)mkdir(dirname, 0777);
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be created.", message,
-        "Directory %s could not be created for user with id %lu. Error: %s\n", dirname, message->header->user_id);
-
-    printf("Created directory %s for client with user id %lu\n", dirname, user_id);
-
     char journal_path[512];
+    char dirname[512];
     char* zip_files[] = {
         "1.txt"
     };
 
+    USER_ID user_id;
+
+    MESSAGE_CONTENT_NODE_VALUE* journal_name = extract_value_from_content(message->content, "journal-name");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_name, "Journal name is invalid or missing.", message,
+        "Journal name %s is invalid for user with id %lu. Error: %s\n", journal_name, message->header->user_id);
+    LOG_DEBUG("Journal name %s is a valid name.", journal_name);
+
+    sprintf(dirname, "%lu", user_id);
+    OPERATION_STATUS status = (OPERATION_STATUS)mkdir(dirname, 0777);
+    status = (status == -1 && errno == EEXIST) || (status == 0);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be created.", message,
+        "Directory %s could not be created for user with id %lu. Error: %s\n", dirname, message->header->user_id);
+    LOG_INFO("Created directory %s for client with user id %lu\n", dirname, user_id);
+
     sprintf(journal_path, "%s/%s.zip", dirname, journal_name->node_value);
     status = (OPERATION_STATUS)zip_create(dirname, zip_files, 1)
     CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be created.", message, 
-        "Zip %s could not be created for user with id %lu. Error: %s", journal_path, message->header->user_id);
+        "Zip %s could not be created for user with id %lu. Error: %s\n", journal_path, message->header->user_id);
 
+    LOG_DEBUG("Journal %s created succesfully.\n", journal_name)
     send_status_message("Journal created successfully.", CREATE_JOURNAL, OPERATION_SUCCESS);
     return OPERATION_SUCCESS;
 }
