@@ -8,6 +8,7 @@
 #include <zip/src/zip.h>
 #include <errno.h>
 #include <regex.h>
+#include <sys/stat.h>
 
 
 #define CHECK_FOR_FAIL_AND_SEND_MESSAGE(variable, message_error, type, console_error, ...) \
@@ -71,7 +72,7 @@ MESSAGE_CONTENT_NODE_VALUE* extract_value_from_content(MESSAGE_CONTENT* content,
 
 OPERATION_STATUS generate_id(MESSAGE* message) {
     char message[50];
-    USER_ID new_id = time(NULL) + (random() % 1000);
+    USER_ID new_id = (USER_ID)time(NULL) + (random() % 1000);
 
     sprintf(message, "Generated id is %lu", new_id);
     send_status_message(new_id, message, GENERATE_ID, OPERATION_SUCCESS);
@@ -93,11 +94,11 @@ OPERATION_STATUS create_journal(MESSAGE* message){
     MESSAGE_CONTENT_NODE_VALUE* journal_name = extract_value_from_content(message->content, "journal-name");
     CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_name, "Journal name is invalid or missing.", message,
         "Journal name %s is invalid for user with id %lu. Error: %s\n", journal_name, message->header->user_id);
-    LOG_DEBUG("Journal name %s is a valid name.", journal_name);
+    LOG_DEBUG("Journal name %s is present and a valid name.", journal_name);
 
     sprintf(dirname, "%lu", user_id);
     OPERATION_STATUS status = (OPERATION_STATUS)mkdir(dirname, 0777);
-    status = (status == -1 && errno == EEXIST) || (status == 0);
+    status = (status == OPERATION_FAIL && errno == EEXIST) || (status == OPERATION_SUCCESS);
     CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be created.", message,
         "Directory %s could not be created for user with id %lu. Error: %s\n", dirname, message->header->user_id);
     LOG_INFO("Created directory %s for client with user id %lu\n", dirname, user_id);
@@ -120,39 +121,20 @@ OPERATION_STATUS retrieve_journal(MESSAGE* message) {
 
     char journal_path[1024];
     sprintf(journal_path, "./journals/%d/%s.zip", message->header->user_id, journal_name);
-    struct zip_t zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, "r");
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
+
+    int journal_fd = open(journal_path, O_RDONLY);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_fd, "Journal could not be found on the server.", message, content, 
         "The journal %s could not be found! Error: %s\n", journal_path);
 
-    char* content = NULL;
-    int total_content_size = 0;
-    struct zip_t *zip = zip_open("foo.zip", 0, 'r');
+    struct stat st;
+    stat(journal_fd, &st);
+    
+    char content[st.st_size];
+    OPERATION_STATUS status = (OPERATION_STATUS)read(journal_fd, content, st.st_size);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be sent.", message, content, 
+        "The journal %s could not be read! Error: %s\n", journal_path);
 
-    int total_entries = zip_entries_total(zip);
-    for(int i = 0; i < total_entries; i++) {
-        if(zip_entry_isdir(zip)) {
-            continue;
-        }
-
-        zip_entry_openbyindex(zip, i);
-
-        unsigned long long size = zip_entry_size(zip);
-        char entry_content[size];
-        size_t entry_content_size;
-
-        zip_entry_read(zip, &entry_content, &entry_content_size);
-        if(!content) {
-            content = (char*)malloc(entry_content_size);
-        }
-        else {
-            content = (char*)realloc(content, total_content_size + entry_content_size);
-        }
-
-        strcpy(content + total_content_size, entry_content);
-
-        zip_entry_close(zip);
-        free(buf);
-    }
+    close(journal_fd);
 
     char* keys[] = {
         "status",
@@ -184,27 +166,24 @@ OPERATION_STATUS import_journal(MESSAGE* message) {
 
     char journal_path[1024];
     sprintf(journal_path, "./journals/%d/%s.zip", message->header->user_id, journal_name);
-    struct zip_t zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, "r");
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
-        "The journal %s could not be found! Error: %s\n", journal_path);
-
-    struct zip_t zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, "r+");
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(zip, "Journal could not be found on the server.", message, content, 
-        "The journal %s could not be found! Error: %s\n", journal_path);
-
-    char page_name[50];
-    MESSAGE_CONTENT_NODE* node = content->head;
     
-    while(node) {
-        if(strlen(node->key) > 10) {
-            printf("Page %s has a long name. Error: %s", node->key, strerror(errno));
-            continue;
-        }
+    int journal_fd = open(journal_path, O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_fd, "Journal could not be imported.", message, content, 
+        "The journal %s could not be created before import! Error: %s\n", journal_path);
+    
+    MESSAGE_CONTENT_NODE_VALUE* journal_data = extract_value_from_content(message->content, "journal-data");
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(journal_data, "Journal could not be imported. Check the file and try again.", message, content, 
+        "The journal %s could not be imported because content of it is not present! Error: %s\n", journal_path);
 
-        sprintf("%s.txt", node->key);
-        zip_entry_open(zip, page_name);
-        
-    }
+    OPERATION_STATUS status = write(journal_fd, journal_data->node_value, journal_data->size);
+    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Journal could not be imported.", message, content, 
+        "The journal %s could not be imported because content of it cannot be written! Error: %s\n", journal_path);
+    
+    close(journal_fd);
+
+    LOG_DEBUG("Journal %s imported succesfully.\n", journal_name)
+    send_status_message("Journal imported successfully.", IMPORT_JOURNAL, OPERATION_SUCCESS);
+    return OPERATION_SUCCESS;
 }
 
 
