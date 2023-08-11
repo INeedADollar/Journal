@@ -3,13 +3,13 @@
 #include <stdlib.h>
 
 typedef struct {
-    MESSAGE* messages[1000];
+    message* messages[1000];
     int length;
-} SERVER_QUEUE;
+} messages_queue;
 
-static SERVER_QUEUE* queue = calloc(sizeof(MESSAGE));
+static messages_queue* queue = calloc(sizeof(message));
 
-OPERATION_STATUS enqueue_message(MESSAGE* message) {
+operation_status enqueue_message(message* message) {
     if(queue->length < 1000) {
         queue->messages[queue->length] = message;
         queue->length++;
@@ -20,14 +20,14 @@ OPERATION_STATUS enqueue_message(MESSAGE* message) {
     return OPERATION_FAIL;
 }
 
-MESSAGE* dequeue_message() {
+message* dequeue_message() {
     if(queue->length > 0) {
-        MESSAGE* message = queue->messages[0];
+        message* message = queue->messages[0];
         memmove((void*)queue->messages, (void*)(queue->messages + 1), queue->length - 2);
         queue->length--;
 
         return message;
     }
 
-    return (MESSAGE*)NULL;
+    return (message*)NULL;
 }

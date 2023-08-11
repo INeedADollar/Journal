@@ -11,14 +11,8 @@
 #include <sys/stat.h>
 
 
-operation_status generate_id(message* message) {
-    char message[50];
-    user_id new_id = (user_id)time(NULL) + (random() % 1000);
-
-    sprintf(message, "Generated id is %lu", new_id);
-    send_status_message(new_id, message, GENERATE_ID, OPERATION_SUCCESS);
-
-    return OPERATION_SUCCESS;
+user_id generate_id() {
+    return (user_id)time(NULL) + (random() % 1000);
 }
 
 

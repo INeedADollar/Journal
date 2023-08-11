@@ -1,7 +1,7 @@
 #ifndef MESSAGES_QUEUE_H
 #define MESSAGES_QUEUE_H
 
-#include "messages.h"
+#include "message.h"
 #include "utils.h"
 
 operation_status enqueue_message(message* message);
