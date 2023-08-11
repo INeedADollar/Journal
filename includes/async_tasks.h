@@ -1,12 +1,10 @@
 #ifndef ASYNC_TASKS_H
 #define ASYNC_TASKS_H
 
-#include "server_queue.h"
-#include "server_messages.h"
-
+#include "message.h"
 #include <C-Thread-Pool/thpool.h>
 
-OPERATION_STATUS create_async_task(MESSAGE* message);
+operation_status create_async_task(message* message);
 
 int tasks_running_count();
 

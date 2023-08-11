@@ -1,21 +1,21 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-#include "server_messages.h"
-#include "global.h"
+#include "message.h"
+#include "utils.h"
 
-OPERATION_STATUS generate_id(MESSAGE* message);
+operation_status generate_id(message* message);
 
-OPERATION_STATUS create_journal(MESSAGE* message);
+operation_status create_journal(message* message);
 
-OPERATION_STATUS retrieve_journal(MESSAGE* message);
+operation_status retrieve_journal(message* message);
 
-OPERATION_STATUS import_journal(MESSAGE* message);
+operation_status import_journal(message* message);
 
-OPERATION_STATUS modify_journal(MESSAGE* message);
+operation_status modify_journal(message* message);
 
-OPERATION_STATUS delete_journal(MESSAGE* message);
+operation_status delete_journal(message* message);
 
-OPERATION_STATUS disconnect_client(MESSAGE* message);
+operation_status disconnect_client(message* message);
 
-#endif // COMMANDS_HE
+#endif // COMMANDS_H

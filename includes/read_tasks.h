@@ -1,15 +1,15 @@
 #ifndef READ_TASKS_H
 #define READ_TASKS_H
 
-#include "global.h"
-#include "server_messages.h"
+#include "utils.h"
+#include "message.h"
 
 typedef struct {
-    MESSAGE_HEADER* header;
+    message_header* header;
     char* initial_read_message;
     int client_fd;
-} READ_BIG_MESSAGE_TASK_ARGS;
+} read_big_message_task_args;
 
-OPERATION_STATUS create_read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args);
+operation_status create_read_big_message_task(read_big_message_task_args* args);
 
 #endif // READ_TASKS_H

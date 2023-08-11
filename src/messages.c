@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 
-MESSAGE_HEADER* parse_header(char* partial_message) {
+message_header* parse_header(char* partial_message) {
     int message_type, message_length, user_id;
 
     int res = sscanf(partial_message, "Header\nmessage-type<::::>%d\nmessage-length<::::>%d\nuser-id<::::>%d\n", 
@@ -13,7 +13,7 @@ MESSAGE_HEADER* parse_header(char* partial_message) {
         return NULL;
     }
 
-    MESSAGE_HEADER* header = malloc(sizeof(MESSAGE_HEADER));
+    message_header* header = malloc(sizeof(message_header));
     header->message_type = message_type;
     header->message_length = message_length;
     header->user_id = user_id;
@@ -22,7 +22,7 @@ MESSAGE_HEADER* parse_header(char* partial_message) {
 }
 
 
-MESSAGE_CONTENT* parse_content(char* content_str) {
+message_content* parse_content(char* content_str) {
     char start_tag[] = "<;23sad32fefs.>";
     char end_tag[] = "</sasadasfds.32.asd2qasd>\n";
 
@@ -30,8 +30,8 @@ MESSAGE_CONTENT* parse_content(char* content_str) {
     char *current_pos = content_str;
     void *start, *end;
 
-    MESSAGE_CONTENT* content = (MESSAGE_CONTENT*)calloc(sizeof(MESSAGE_CONTENT));
-    MESSAGE_CONTENT_NODE* last = NULL;
+    message_content* content = (message_content*)calloc(sizeof(message_content));
+    message_content_node* last = NULL;
 
     while(1) {
         char* key_end = strstr(current_pos, "=");
@@ -54,7 +54,7 @@ MESSAGE_CONTENT* parse_content(char* content_str) {
             break;
         }
 
-        MESSAGE_CONTENT_NODE* node = (MESSAGE_CONTENT_NODE*)calloc(sizeof(MESSAGE_CONTENT_NODE));
+        message_content_node* node = (message_content_node*)calloc(sizeof(message_content_node));
         node->key = (char*)malloc(strlen(key_end));
         strcpy(node->key, content);
 
@@ -78,14 +78,14 @@ MESSAGE_CONTENT* parse_content(char* content_str) {
 }
 
 
-MESSAGE* parse_message(int socket_fd, char* message) {
-    MESSAGE_HEADER* header = parse_header(message);
+message* parse_message(int socket_fd, char* message) {
+    message_header* header = parse_header(message);
     if(header == NULL) {
         return NULL;
     }
 
     srandom(time(NULL));
-    MESSAGE* server_message = malloc(sizeof(MESSAGE));
+    message* message = malloc(sizeof(message));
     message->id = socket_fd * 1000 + (random() % 1000);
     message->header = header;
 
@@ -96,16 +96,16 @@ MESSAGE* parse_message(int socket_fd, char* message) {
 }
 
 
-void delete_message(MESSAGE* message) {
+void delete_message(message* message) {
     free(message->header);
 
     if(message->content) {
-        MESSAGE_CONTENT_NODE* node = message->content->head;
+        message_content_node* node = message->content->head;
         while(node) {
             free(node->key);
             free(node->value->node_value);
 
-            MESSAGE_CONTENT_NODE* next = node->next;
+            message_content_node* next = node->next;
             free(node);
             node = next;
         }
@@ -115,15 +115,15 @@ void delete_message(MESSAGE* message) {
 }
 
 
-MESSAGE_CONTENT* create_message_content(char* keys[], size_t keys_len, char* values[], size_t values_len) {
+message_content* create_message_content(char* keys[], size_t keys_len, char* values[], size_t values_len) {
     if(keys_len == 0 || values == 0 || keys_len != values_len) {
-        return (MESSAGE_CONTENT*)NULL;
+        return (message_content*)NULL;
     }
 
-    MESSAGE_CONTENT* content = (MESSAGE_CONTENT*)malloc(sizeof(MESSAGE_CONTENT));
-    MESSAGE_CONTENT_NODE* last = NULL;
+    message_content* content = (message_content*)malloc(sizeof(message_content));
+    message_content_node* last = NULL;
     for(int i = 0; i < keys_len; i++) {
-        MESSAGE_CONTENT_NODE* node = (MESSAGE_CONTENT_NODE*)malloc(sizeof(MESSAGE_CONTENT_NODE));
+        message_content_node* node = (message_content_node*)malloc(sizeof(message_content_node));
         node->key = (char*)malloc(strlen(keys[i]);
         strcpy(node->key, keys[i]);
 

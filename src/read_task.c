@@ -8,7 +8,7 @@
 
 static threadpool message_tasks = thpool_init(100);
 
-void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
+void read_big_message_task(read_big_message_task_args* args) {
     int total_received = 0;
     char part[1024];
 
@@ -31,7 +31,7 @@ void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
     }
 
     read_message[total_received] = '\0';
-    MESSAGE* message = parse_message(read_message);
+    message* message = parse_message(read_message);
     if(message) {
         enqueue_message(message);
     }
@@ -40,6 +40,6 @@ void read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
     free(args);
 }
 
-OPERATION_STATUS create_read_big_message_task(READ_BIG_MESSAGE_TASK_ARGS* args) {
-    return (OPERATION_STATUS)thpool_add_work(message_tasks, (void*)read_big_message_task, (void*)args);
+operation_status create_read_big_message_task(read_big_message_task_args* args) {
+    return (operation_status)thpool_add_work(message_tasks, (void*)read_big_message_task, (void*)args);
 }
