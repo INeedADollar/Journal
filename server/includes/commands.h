@@ -4,18 +4,25 @@
 #include "message.h"
 #include "utils.h"
 
-operation_status generate_id(message* message);
+typedef struct {
+    operation_status status;
+    char status_message[1000];
+    char* additional_data;
+    size_t additional_data_size;
+} command_result;
 
-operation_status create_journal(message* message);
+command_result generate_id(message* message);
 
-operation_status retrieve_journal(message* message);
+command_result create_journal(message* message);
 
-operation_status import_journal(message* message);
+command_result retrieve_journal(message* message);
 
-operation_status modify_journal(message* message);
+command_result import_journal(message* message);
 
-operation_status delete_journal(message* message);
+command_result modify_journal(message* message);
 
-operation_status disconnect_client(message* message);
+command_result delete_journal(message* message);
+
+command_result disconnect_client(message* message);
 
 #endif // COMMANDS_H

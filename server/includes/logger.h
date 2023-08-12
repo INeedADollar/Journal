@@ -17,7 +17,7 @@ FILE* log_file = fopen("server_log.log", "w+");
     char message[100000]; \
     snprintf(message, 100000, message_format, __VA_ARGS__); \
     
-    fprintf(output, "%d-%02d-%02d %02d:%02d:%02d %s: %s", current_time.tm_year + 1900, \
+    fprintf(output, "%d-%02d-%02d %02d:%02d:%02d %s: %s\n", current_time.tm_year + 1900, \
         current_time.tm_mon + 1, current_time.tm_mday, current_time.tm_hour, current_time.tm_min, \
         current_time.tm_sec, level, message); \
 
