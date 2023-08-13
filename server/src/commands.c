@@ -114,7 +114,7 @@ command_result* check_message_and_run_command(message* message) {
     }
 
     delete_message(message);
-    return status;
+    return result;
 }
 
 

@@ -4,7 +4,18 @@
 #include "message.h"
 #include "utils.h"
 
+typedef enum {
+    GENERATE_ID,
+    CREATE_JOURNAL,
+    RETRIEVE_JOURNAL,
+    IMPORT_JOURNAL,
+    MODIFY_JOURNAL,
+    DELETE_JOURNAL,
+    DISCONNECT_CLIENT
+} command_types;
+
 typedef struct {
+    command_types type;
     operation_status status;
     char status_message[1000];
     char* additional_data;

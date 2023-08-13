@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "message.h"
+#include "commands.h"
 
 typedef enum {
     OPERATION_SUCCESS = 0,
@@ -10,6 +10,6 @@ typedef enum {
 
 static int STOP_SERVER = 0;
 
-void send_message(message* message);
+void send_command_result_message(command_result* result);
 
 #endif // UTILS_H

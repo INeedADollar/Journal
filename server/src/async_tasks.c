@@ -1,5 +1,6 @@
 #include "async_tasks.h"
 #include "commands.h"
+#include "utils.h"
 
 #include <string.h>
 
@@ -13,7 +14,7 @@ void init_thread_pool() {
 
 void retrieve_journal_task(retrieve_journal_args* args) {
     command_result* result = retrieve_journal(args->id, args->journal_name);
-    // functie de trimis command_result
+    send_command_result_message(args->id, result);
 
     free(args->journal_name);
     free(args);
@@ -31,7 +32,7 @@ operation_status retrieve_journal_task(user_id id, char* journal_name) {
 
 void import_journal_task(import_journal_args* args) {
     command_result* result = import_journal(args->id, args->journal_name, args->journal_content, args->journal_content_size);
-    // functie de trimis command_result
+    send_command_result_message(args->id, result);
 
     free(args->journal_name);
     free(args->journal_content);
@@ -55,7 +56,7 @@ operation_status create_import_journal_task(user_id id, char* journal_name, char
 
 void modify_journal_task(modify_journal_args* args) {
     command_result* result = modify_journal(args->id, args->journal_name, args->new_content, args->new_content_size);
-    // functie de trimis command_result
+    send_command_result_message(args->id, result);
 
     free(args->journal_name);
     free(args->new_content);

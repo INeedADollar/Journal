@@ -5,68 +5,42 @@
 #include <stdio.h>
 
 
-operation_status send_message(message* message) {
-    int response_len = message->header->message_length + 100;
-    char response[response_len];
-    char* content = NULL;
+operation_status send_command_result_message(user_id id, command_result* result) { 
+    size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
+    size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 52;
+    char content[content_size];
+    char status[18] = result->type == OPERATION_SUCCESS ? "OPERATION_SUCCESS" : "OPERATION_FAIL";
 
-    message_content_node* node = message->content->head;
-    while(node) {
-        if(content) {
-            content = realloc(content, node->node_data->size);
-        }
-        else {
-            content = malloc(node->node_data->size);
-        }
+    sprintf(content, "Content\nstatus=%s\nstatus-message=%s\n", status, result->status_message, result->additional_data); 
 
-        memcpy((void*)content, (void*)node->node_data->value, node->node_data->size);
-        node = node->next;
+    if(result->additional_data) {
+        char* content_end = content + (content_size - result->additional_data_size - 18);
+        sprintf(content_end, "additional-data=%s\n", result->additional_data);
+    }
+    else {
+        content_size -= 18;
     }
 
-    sprintf(response, "Header\nmessage-type<::::>%d\nmessage-length<::::>%d\nuser-id<::::>%d\nContent\n%s",
-        message->header->message_type, message->header->message_length, message->header->user_id, message->content);
-    
-    ssize_t res = send(message->id / 1000, response, strlen((char*)response), 0);
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(res, "Failed to send actual response", message->header->type
-        "Failed to send actual response to client with id %lu", message->header->client_id);
+    char header[100];
+    sprintf(header, "Header\nmessage-type<::::>%d\nuser-id<::::>%d\n", result->type, id);
 
-    LOG_INFO("Message %s sent succesfully to client with id %d", response, message->header->client_id);
+    size_t header_len = strlen(header);
+    size_t message_length = header_len + content_size + 22;
+    char message_length_str[15];
+    snprintf(message_length_str, 15, "%zu", message_length);
+    message_length += strlen(message_length_str);
+    
+    sprintf(header + header_len, "message-length<::::>%s\n", message_length_str);
+    char message[message_length];
+    sprintf(message, "%s%s", header, content);
+
+    ssize_t send_result = send(id / 1000, message, message_length, 0);
+    if(send_result == OPERATION_FAIL) {
+        LOG_ERROR("Failed to send actual response to client with id %lu", id)
+        return OPERATION_FAIL;
+    }
+
     return OPERATION_SUCCESS;
-}
-
-
-operation_status send_response(message* response) {
-    operation_status status = send_message(response);
-    CHECK_FOR_FAIL_AND_SEND_MESSAGE(status, "Error processing your request.", response->header->message_type, 
-        "Response for message with type %d could not be sent. Error: %s", response->header->message_type)
-    delete_message(response);
-    return status;
-}
-
-
-void send_status_message(user_id id, char* message_str, message_types type, operation_status status) {
-    char* keys[] = {
-        "status",
-        "message"
-    };
-
-    char status_str[1];
-    itoa((int)status, status_str, 10);
-
-    char* values[] = {
-        status_str,
-        message_str
-    };
-
-    message* response_message = (message*)calloc(sizeof(message));
-    response_message->header = (message_header*)malloc(sizeof(message_header));
-    response_message->header->message_type = type;
-    response_message->header->user_id = id;
-    
-    message_header* content = create_message_content(keys, 2, values, 2);
-    response_message->content = content;
-
-    send_response(response_message);
 }
 
 

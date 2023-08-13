@@ -1,22 +1,14 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
+#include "commands.h"
+
 typedef long int message_id;
 typedef unsigned long user_id;
 typedef int message_length;
 
-typedef enum {
-    GENERATE_ID,
-    CREATE_JOURNAL,
-    RETRIEVE_JOURNAL,
-    IMPORT_JOURNAL,
-    MODIFY_JOURNAL,
-    DELETE_JOURNAL,
-    DISCONNECT_CLIENT
-} message_types;
-
 typedef struct {
-    message_types type;
+    command_types type;
     message_length length;
     user_id client_id;
 } message_header;

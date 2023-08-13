@@ -147,7 +147,8 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		}
 
 		free(header);
-		return check_message_and_run_command(message);
+		command_result* result = check_message_and_run_command(message);
+		return send_command_result_message(args->id, result);
 	}
 
 	return OPERATION_SUCCESS;
