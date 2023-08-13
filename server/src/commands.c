@@ -1,4 +1,5 @@
 #include "commands.h"
+#include "async_tasks.h"
 #include "logger.h"
 #include "message.h"
 
@@ -27,8 +28,93 @@ command_result* get_command_result(operation_status status, char* status_message
 }
 
 
-void get_journal_path(user_id id, char* journal_name, char* buffer) {
-    sprintf(buffer, "./journals/%lu/%s.zip", id, journal_name);
+command_result* check_journal_name(message_content_node_data* journal_name) {
+    if(!journal_name) {
+        LOG_ERROR("Request for create journal made by client %lu is missing journal_name key from content!", message->header->client_id)
+        return get_command_result(OPERATION_FAIL, "Key journal_name is missing from request content!", NULL, 0);
+    }
+
+    return NULL;
+}
+
+command_result* check_message_and_run_command(message* message) {
+    command_result* result = NULL;
+    message_content_node_data* journal_name = extract_value_from_content(message->content, "journal-name");
+    operation_status op_status;
+
+    switch (message->header->type)
+    {
+    case GENERATE_ID:
+        result = generate_id(message->id / 1000);
+        break;
+    case CREATE_JOURNAL:
+        result = check_journal_name(journal_name);
+        if(!result) {
+            result = create_journal(message->header->client_id, journal_name->value);
+        }
+        break;
+    case RETRIEVE_JOURNAL:
+        result = check_journal_name(journal_name);
+        if(!result) {
+            op_status = create_retrieve_journal_task(message->header->client_id, journal_name->value);
+            if(op_status == OPERATION_FAIL) {
+                LOG_ERROR("Could not create retrieve journal task for client %lu", message->header->client_id);
+                status = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
+            }
+        }
+        break;
+    case IMPORT_JOURNAL:
+        result = check_journal_name(journal_name);
+        if(result) {
+            break;
+        }
+
+        message_content_node_data* journal_data = extract_value_from_content(message->content, "journal-data");
+        if(!journal_data) {
+            LOG_ERROR("Request for create journal made by client %lu is missing journal_data key from content!", message->header->client_id)
+            result = get_command_result(OPERATION_FAIL, "Key journal_data is missing from request content!", NULL, 0);
+            break;
+        }
+        
+        op_status = create_import_journal_task(message->header->client_id, journal_name->value, journal_data->value, journal_data->size);
+        if(op_status == OPERATION_FAIL) {
+            LOG_ERROR("Could not create import journal task for client %lu", message->header->client_id);
+            status = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
+        }
+        break;
+    case MODIFY_JOURNAL:
+        result = check_journal_name(journal_name);
+        if(result) {
+            break;
+        }
+
+        message_content_node_data* new_content = extract_value_from_content(message->content, "new-content");
+        if(!new_content) {
+            LOG_ERROR("Request for create journal made by client %lu is missing new_content key from content!", message->header->client_id)
+            result = get_command_result(OPERATION_FAIL, "Key journal_data is missing from request content!", NULL, 0);
+            break;
+        }
+        
+        op_status = create_modify_journal_task(message->header->client_id, journal_name->value, new_content->value, new_content->size);
+        if(op_status == OPERATION_FAIL) {
+            LOG_ERROR("Could not create modify journal task for client %lu", message->header->client_id);
+            result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
+        }
+        break;
+    case DELETE_JOURNAL:
+        result = check_journal_name(journal_name);
+        if(!result) {
+            result = delete_journal(message->header->client_id, journal_name->value);
+        }
+        break;
+    case DISCONNECT_CLIENT:
+        disconnect_client(message->header->client_id, message->id / 1000);
+    default:
+        break;
+    }
+
+    delete_message(message);
+    return status;
 }
 
 
@@ -66,6 +152,11 @@ command_result create_journal(user_id id, char* journal_name) {
 
     LOG_DEBUG("Journal %s created succesfully.\n", journal_name)
     return get_command_result(OPERATION_SUCCESS, "Journal created succesfully.", NULL, 0);
+}
+
+
+void get_journal_path(user_id id, char* journal_name, char* buffer) {
+    sprintf(buffer, "./journals/%lu/%s.zip", id, journal_name);
 }
 
 
@@ -187,7 +278,7 @@ command_result* modify_journal(user_id id, char* journal_name, char* new_content
 }
 
 
-command_result* delete_journal(user_id id, char* journal_name){
+command_result* delete_journal(user_id id, char* journal_name) {
     char journal_path[1024];
     get_journal_path(id, journal_name, journal_path);
 
@@ -201,7 +292,7 @@ command_result* delete_journal(user_id id, char* journal_name){
 }
 
 
-operation_status disconnect_client(user_id id, int client_fd){
+operation_status disconnect_client(user_id id, int client_fd) {
     LOG_INFO("Client with id %lu and socket id %d has disconnected!\n", user_id, client_fd);
     return (operation_status)close(client_fd);
 }

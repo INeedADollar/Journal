@@ -11,18 +11,21 @@ typedef struct {
     size_t additional_data_size;
 } command_result;
 
-command_result generate_id(message* message);
 
-command_result create_journal(message* message);
+command_result* check_message_and_run_command(message* message);
 
-command_result retrieve_journal(message* message);
+command_result* generate_id(int client_fd);
 
-command_result import_journal(message* message);
+command_result create_journal(user_id id, char* journal_name);
 
-command_result modify_journal(message* message);
+command_result* retrieve_journal(user_id id, char* journal_name);
 
-command_result delete_journal(message* message);
+command_result* import_journal(user_id id, char* journal_name, char* journal_data, size_t journal_data_size);
 
-command_result disconnect_client(message* message);
+command_result* modify_journal(user_id id, char* journal_name, char* new_content, size_t new_content_size);
+
+command_result* delete_journal(user_id id, char* journal_name);
+
+operation_status disconnect_client(user_id id, int client_fd);
 
 #endif // COMMANDS_H
