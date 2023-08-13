@@ -16,7 +16,7 @@ command_result* check_message_and_run_command(message* message);
 
 command_result* generate_id(int client_fd);
 
-command_result create_journal(user_id id, char* journal_name);
+command_result* create_journal(user_id id, char* journal_name);
 
 command_result* retrieve_journal(user_id id, char* journal_name);
 

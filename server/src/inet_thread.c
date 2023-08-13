@@ -3,6 +3,7 @@
 #include "async_tasks.h"
 #include "utils.h"
 #include "commands.h"
+#include "messages_queue.h"
 
 #include <stdio.h>		
 #include <stdlib.h>
@@ -123,6 +124,8 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		strcpy(message_copy, clients_data[client_socket_fd].buffered_message);
 
 		free(clients_data[client_socket_fd].header);
+		clients_data[client_socket_fd].header = NULL;
+		
 		free(clients_data[client_socket_fd].buffered_message);
 		clients_data[client_socket_fd].buffered_message_size = 0;
 
