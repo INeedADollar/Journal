@@ -5,6 +5,32 @@
 #include <stdio.h>
 
 
+void get_command_type_string(command_types type, char* buffer) {
+    switch(type) {
+    case GENERATE_ID:
+        strcpy(buffer, "GENERATE_ID");
+        break;
+    case CREATE_JOURNAL:
+        strcpy(buffer, "CREATE_JOURNAL");
+        break;
+    case IMPORT_JOURNAL:
+        strcpy(buffer, "IMPORT_JOURNAL");
+        break;
+    case RETRIEVE_JOURNAL:
+        strcpy(buffer, "RETRIEVE_JOURNAL");
+        break;
+    case MODIFY_JOURNAL:
+        strcpy(buffer, "MODIFY_JOURNAL");
+        break;
+    case DELETE_JOURNAL:
+        strcpy(buffer, "DELETE_JOURNAL");
+        break;
+    default:
+        break;
+    }
+}
+
+
 operation_status send_command_result_message(user_id id, command_result* result) { 
     size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
     size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 52;
@@ -22,7 +48,10 @@ operation_status send_command_result_message(user_id id, command_result* result)
     }
 
     char header[100];
-    sprintf(header, "Header\nmessage-type<::::>%d\nuser-id<::::>%d\n", result->type, id);
+    char command_type[17];
+
+    get_command_type_string(result->type, command_type);
+    sprintf(header, "Header\ncommand-type<::::>%s\nuser-id<::::>%d\n", command_type, id);
 
     size_t header_len = strlen(header);
     size_t message_length = header_len + content_size + 22;

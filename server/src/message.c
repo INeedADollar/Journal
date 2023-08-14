@@ -1,12 +1,17 @@
-#include "server_messages.h"
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif // _GNU_SOURCE
+
+#include "message.h"
+
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string.h>
 
 message_header* parse_header(char* partial_message) {
     int message_type, message_length, user_id;
 
-    int res = sscanf(partial_message, "Header\nmessage-type<::::>%d\nmessage-length<::::>%d\nuser-id<::::>%d\n", 
+    int res = sscanf(partial_message, "Header\ncommand-type<::::>%d\nmessage-length<::::>%d\nuser-id<::::>%d\n", 
         &message_type, &message_length, &user_id);
     
     if(res < 2) {
@@ -62,7 +67,6 @@ message_content* parse_content(char* content_str) {
         memcpy(node->value->node_value, target)
         node->value->size = (size_t)(end - start);
 
-        last = node;
         if(!content->head) {
             content->head = node;
         }
@@ -70,6 +74,7 @@ message_content* parse_content(char* content_str) {
             last->next = node;
         }
 
+        last = node;
         current_pos = end + 27;
         free(target);
     }
@@ -88,11 +93,16 @@ message* parse_message(int socket_fd, char* message) {
     message* message = malloc(sizeof(message));
     message->id = socket_fd * 1000 + (random() % 1000);
     message->header = header;
+    message->content = NULL;
 
-    char* content_str = (char*)(message + (strlen(message) - header->message_length));
-    message->content = parse_content(content_str);
+    char* content_str = strstr("Content\n");
+    if(!content_str) {
+        delete_message(message);
+        return NULL;
+    }
 
-    return server_message;
+    message->content = parse_content(content_str + 9);
+    return message;
 }
 
 
@@ -127,7 +137,7 @@ message_content* create_message_content(char* keys[], size_t keys_len, char* val
         node->key = (char*)malloc(strlen(keys[i]);
         strcpy(node->key, keys[i]);
 
-        node->value = (MESSAGE_CONTENT_NODE_VALUE*)malloc(sizeof(MESSAGE_CONTENT_NODE_VALUE));
+        node->value = (message_content_node_value*)malloc(sizeof(message_content_node_value));
         node->value->node_value = malloc(strlen(values[i]));
         memcpy(node->value->node_value, values[i]);
 
