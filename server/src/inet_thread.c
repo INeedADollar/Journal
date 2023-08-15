@@ -35,13 +35,13 @@ operation_status init_server() {
 	struct hostent* he;
 
 	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {				
-		LOG_ERROR("The server socket cannot be open. Error: ", strerror(errno));
+		log_error("The server socket cannot be open. Error: ", strerror(errno));
 		return OPERATION_FAIL;
 	}
 
     int reuse_address = 1;
     if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_address, 4) < 0) {
-        LOG_ERROR("Cannot set reuse address option on socket. Error: ", strerror(errno));
+        log_error("Cannot set reuse address option on socket. Error: ", strerror(errno));
         return OPERATION_FAIL;
     }
 
@@ -51,7 +51,7 @@ operation_status init_server() {
 	server_addr.sin_port = htons(5000);
 
 	if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {        
-		LOG_ERROR("Could not bind the server socket! Error: ", strerror(errno));
+		log_error("Could not bind the server socket! Error: ", strerror(errno));
 		return OPERATION_FAIL;
 	}
 	
@@ -69,12 +69,12 @@ operation_status accept_new_client(fd_set* active_set, int server_socket_fd) {
 	client_socket_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);		
 
 	if (client_socket_fd < 0) {
-		LOG_ERROR("Connection with client failed. Error: ", strerror(errno));
+		log_error("Connection with client failed. Error: ", strerror(errno));
 		return OPERATION_FAIL;
 	}
 	
-	LOG_INFO("Client %d connected.\n", client_socket_fd);
-    FD_SET(client_socket_fd, &active_set);
+	log_info("Client %d connected.\n", client_socket_fd);
+    FD_SET(client_socket_fd, active_set);
 	return OPERATION_SUCCESS;
 }
 
@@ -86,7 +86,7 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 	size_t received = recv(socket_fd, &part, size_to_read, 0);
 
 	if(received == OPERATION_FAIL) {
-		LOG_ERROR("Could not read from client %d", socket_fd);
+		log_error("Could not read from client %d", socket_fd);
 		disconnect_client(0, socket_fd);
 		return OPERATION_FAIL;
 	}
@@ -107,11 +107,11 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		
 		header = parse_header(read_message);
 		if(header == NULL) {
-			LOG_ERROR("Could not parse header from: %s, client_socket_id: %d", read_message, client_socket_fd);
+			log_error("Could not parse header from: %s, client_socket_id: %d", read_message, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
-		if(header->type == RETRIEVE_JOURNAL || header->message_type == IMPORT_JOURNAL || header->message_type == MODIFY_JOURNAL) {
+		if(header->type == RETRIEVE_JOURNAL || header->type == IMPORT_JOURNAL || header->type == MODIFY_JOURNAL) {
 			clients_data[client_socket_fd].header = header;
 			clients_data[client_socket_fd].buffered_message_size = received_len;
 			clients_data[client_socket_fd].buffered_message = (char*)malloc(header->length);
@@ -133,7 +133,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		clients_data[client_socket_fd].buffered_message_size = 0;
 
 		if(!message) {
-			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", message_copy, header->user_id, client_socket_fd);
+			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", message_copy, header->client_id, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
@@ -145,13 +145,14 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		read_message[received_len] = '\0';
 		message* message = parse_message(client_socket_fd, read_message);
 		if(!message) {
-			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", read_message, header->user_id, client_socket_fd);
+			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", read_message, header->client_id, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
+		user_id id = header->client_id;
 		free(header);
 		command_result* result = check_message_and_run_command(message);
-		return send_command_result_message(args->id, result);
+		return send_command_result_message(id, result);
 	}
 
 	return OPERATION_SUCCESS;
@@ -170,31 +171,31 @@ void inet_thread(void* args) {
     FD_SET(server_socket_fd, &active_sockets_set);
 
 	if(listen(server_socket_fd, 5) < 0) {
-		LOG_ERROR("Could not listen for clients. Error: ", strerror(errno));
+		log_error("Could not listen for clients. Error: ", strerror(errno));
 		pthread_exit(NULL);
 	}	
 
-	LOG_INFO("Waiting for clients to connect...");	
+	log_info("Waiting for clients to connect...");	
 
 	while(!STOP_SERVER) {
         read_sockets_set = active_sockets_set;
         if(select(FD_SETSIZE, &read_sockets_set, NULL, NULL, NULL) < 0) {
-			LOG_ERROR("Select failed. Error: ", strerror(errno));
+			log_error("Select failed. Error: ", strerror(errno));
             pthread_exit(NULL);
         }
 
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if(FD_ISSET(fd, &read_sockets_set)) {
                 if(fd == server_socket_fd) {
-					LOG_DEBUG("Entering accept_new_client");
+					log_debug("Entering accept_new_client");
                     accept_new_client(&active_sockets_set, server_socket_fd);
-					LOG_DEBUG("Exiting accept_new_client");
+					log_debug("Exiting accept_new_client");
 
                 }
                 else {
-					LOG_DEBUG("Entering handle_client_command");
+					log_debug("Entering handle_client_command");
                     handle_client_command(&active_sockets_set, fd);
-					LOG_DEBUG("Exiting handle_client_command");
+					log_debug("Exiting handle_client_command");
                 }
             }
 		}

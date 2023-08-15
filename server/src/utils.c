@@ -3,7 +3,7 @@
 
 #include <sys/socket.h>
 #include <stdio.h>
-
+#include <string.h>
 
 void get_command_type_string(command_types type, char* buffer) {
     switch(type) {
@@ -72,7 +72,7 @@ operation_status send_command_result_message(user_id id, command_result* result)
 
     ssize_t send_result = send(id / 1000, message, message_length, 0);
     if(send_result == OPERATION_FAIL) {
-        LOG_ERROR("Failed to send actual response to client with id %lu", id)
+        log_error("Failed to send actual response to client with id %lu", id);
         return OPERATION_FAIL;
     }
 
@@ -80,7 +80,7 @@ operation_status send_command_result_message(user_id id, command_result* result)
 }
 
 
-message_content_node* extract_value_from_content(message_content* content, char* key) {
+message_content_node_data* extract_value_from_content(message_content* content, char* key) {
     if(!content) {
         return NULL;
     }
@@ -88,7 +88,7 @@ message_content_node* extract_value_from_content(message_content* content, char*
     message_content_node* node = content->head;
     while(node) {
         if(strcmp(node->key, key) == 0) {
-            return node;
+            return node->node_data;
         }
     }
 

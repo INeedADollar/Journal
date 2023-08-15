@@ -39,13 +39,13 @@ int main() {
     do_initialization();
     int res = pthread_create(&ptUnix, (pthread_attr_t*)NULL, (void * (*)(void *))unix_thread, (void*)NULL);
     if(res != 0) {
-        LOG_ERROR("Could not create unix thread. Error: %s", strerror(errno));
+        log_error("Could not create unix thread. Error: %s", strerror(errno));
         return -1;
     }
     
     res = pthread_create(&ptInet, (pthread_attr_t*)NULL, (void * (*)(void *))inet_thread, (void*)NULL);
     if(res != 0) {
-        LOG_ERROR("Could not create inet thread. Error: %s", strerror(errno));
+        log_error("Could not create inet thread. Error: %s", strerror(errno));
 
         STOP_SERVER = 1;
         pthread_join(ptUnix, (void**)NULL);
