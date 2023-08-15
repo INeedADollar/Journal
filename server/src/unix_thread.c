@@ -15,6 +15,8 @@
 
 #define ADMIN_INFO_FILENAME "admin_info.csv"
 
+#define SERVER_SOCK_FILE "server.sock"
+
 int GetCommandAndValue(char buf[BUFFER_SIZE], char command[COMMAND_SIZE], char value[VALUE_SIZE]) {
     int i = 0;
 

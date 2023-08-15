@@ -35,9 +35,16 @@ operation_status send_command_result_message(user_id id, command_result* result)
     size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
     size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 52;
     char content[content_size];
-    char status[18] = result->type == OPERATION_SUCCESS ? "OPERATION_SUCCESS" : "OPERATION_FAIL";
+    char status[18];
 
-    sprintf(content, "Content\nstatus=%s\nstatus-message=%s\n", status, result->status_message, result->additional_data); 
+    if(result->type == OPERATION_SUCCESS) {
+        strcpy(status, "OPERATION_SUCCESS");
+    }
+    else {
+        strcpy(status, "OPERATION_FAIL");
+    }
+
+    sprintf(content, "Content\nstatus=%s\nstatus-message=%s\n", status, result->status_message); 
 
     if(result->additional_data) {
         char* content_end = content + (content_size - result->additional_data_size - 18);

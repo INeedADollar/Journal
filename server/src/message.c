@@ -23,7 +23,7 @@ message_header* parse_header(char* partial_message) {
     message_header* header = malloc(sizeof(message_header));
     header->type = message_type;
     header->length = message_length;
-    header->id = user_id;
+    header->client_id = user_id;
 
     return header;
 }
@@ -86,6 +86,7 @@ message_content* parse_content(char* content_str) {
 }
 
 
+//fix message length
 message* parse_message(int socket_fd, char* message_str) {
     message_header* header = parse_header(message_str);
     if(header == NULL) {
@@ -93,7 +94,7 @@ message* parse_message(int socket_fd, char* message_str) {
     }
 
     srandom(time(NULL));
-    message* message = (message*)malloc(sizeof(message_str));
+    message* message = (message*)malloc(strlen(message_str));
     message->id = socket_fd * 1000 + (random() % 1000);
     message->header = header;
     message->content = NULL;
@@ -140,12 +141,12 @@ message_content* create_message_content(char* keys[], size_t keys_len, char* val
         node->key = (char*)malloc(strlen(keys[i]));
         strcpy(node->key, keys[i]);
 
-        node->value = (message_content_node_value*)malloc(sizeof(message_content_node_value));
-        node->value->node_value = malloc(strlen(values[i]));
-        memcpy(node->value->node_value, values[i]);
-
-        node->value->size = strlen(values[i]);
+        node->node_data->size = strlen(values[i]);
         node->next = NULL;
+
+        node->node_data = (message_content_node_data*)malloc(sizeof(message_content_node_data));
+        node->node_data->value = malloc(node->node_data->size);
+        memcpy(node->node_data->value, values[i], node->node_data->size);
 
         if(!content->head) {
             content->head = node;

@@ -1,6 +1,6 @@
 CC  = gcc
 CFLAGS = -std=c99
-SERVER_FLAGS = -I ./server/includes -I ./server/libs/C-Thread-Pool -I ./server/libs/zip -lpthread
+SERVER_FLAGS = -I ./server/includes -I ./server/libs/C-Thread-Pool -I ./server/libs/zip/src -lpthread
 
 all: server unix-client inet-client
 
