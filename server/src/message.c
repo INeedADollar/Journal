@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
 
 message_header* parse_header(char* partial_message) {
     int message_type, message_length, user_id;
@@ -19,14 +21,15 @@ message_header* parse_header(char* partial_message) {
     }
 
     message_header* header = malloc(sizeof(message_header));
-    header->message_type = message_type;
-    header->message_length = message_length;
-    header->user_id = user_id;
+    header->type = message_type;
+    header->length = message_length;
+    header->id = user_id;
 
     return header;
 }
 
 
+// de reparat functia cu size ul
 message_content* parse_content(char* content_str) {
     char start_tag[] = "<;23sad32fefs.>";
     char end_tag[] = "</sasadasfds.32.asd2qasd>\n";
@@ -35,7 +38,7 @@ message_content* parse_content(char* content_str) {
     char *current_pos = content_str;
     void *start, *end;
 
-    message_content* content = (message_content*)calloc(sizeof(message_content));
+    message_content* content = (message_content*)calloc(1, sizeof(message_content));
     message_content_node* last = NULL;
 
     while(1) {
@@ -46,10 +49,10 @@ message_content* parse_content(char* content_str) {
 
         *key_end = "\0";
 
-        if (start = memmem(key_end + 1, start_tag)) {
+        if (start = memmem(key_end + 1, 16, start_tag, 16)) {
             start += 16;
             if (end = memmem((void*)start, (void*)end_tag)) {
-                target = (void*)malloc(end - start + 1);
+                target = malloc((size_t)(end - start + 1));
                 memcpy(target, start, end - start);
                 target[end - start] = '\0';
             }
@@ -59,13 +62,13 @@ message_content* parse_content(char* content_str) {
             break;
         }
 
-        message_content_node* node = (message_content_node*)calloc(sizeof(message_content_node));
+        message_content_node* node = (message_content_node*)calloc(1, sizeof(message_content_node));
         node->key = (char*)malloc(strlen(key_end));
-        strcpy(node->key, content);
+        strcpy(node->key, current_pos);
 
+        node->node_data->size = (size_t)(end - start);
         node->value = (char*)malloc(end - start);
-        memcpy(node->value->node_value, target)
-        node->value->size = (size_t)(end - start);
+        memcpy(node->node_data->value, target, node->node_data->size);
 
         if(!content->head) {
             content->head = node;
@@ -83,19 +86,19 @@ message_content* parse_content(char* content_str) {
 }
 
 
-message* parse_message(int socket_fd, char* message) {
-    message_header* header = parse_header(message);
+message* parse_message(int socket_fd, char* message_str) {
+    message_header* header = parse_header(message_str);
     if(header == NULL) {
         return NULL;
     }
 
     srandom(time(NULL));
-    message* message = malloc(sizeof(message));
+    message* message = (message*)malloc(sizeof(message_str));
     message->id = socket_fd * 1000 + (random() % 1000);
     message->header = header;
     message->content = NULL;
 
-    char* content_str = strstr("Content\n");
+    char* content_str = strstr("Content\n", message_str);
     if(!content_str) {
         delete_message(message);
         return NULL;
@@ -113,7 +116,7 @@ void delete_message(message* message) {
         message_content_node* node = message->content->head;
         while(node) {
             free(node->key);
-            free(node->value->node_value);
+            free(node->node_data->value);
 
             message_content_node* next = node->next;
             free(node);
@@ -134,7 +137,7 @@ message_content* create_message_content(char* keys[], size_t keys_len, char* val
     message_content_node* last = NULL;
     for(int i = 0; i < keys_len; i++) {
         message_content_node* node = (message_content_node*)malloc(sizeof(message_content_node));
-        node->key = (char*)malloc(strlen(keys[i]);
+        node->key = (char*)malloc(strlen(keys[i]));
         strcpy(node->key, keys[i]);
 
         node->value = (message_content_node_value*)malloc(sizeof(message_content_node_value));

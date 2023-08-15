@@ -1,9 +1,11 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include "ipc.h"
 #include <dirent.h>
+#include <string.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 8192
 #define COMMAND_SIZE 1024
@@ -153,7 +155,7 @@ void ListDir(char buff[BUFFER_SIZE]) {
 
 }
 
-void *unix_main(void *args) {
+void *unix_thread(void *args) {
     struct sockaddr_un addr;
     struct sockaddr_un from;
     int fd;
@@ -163,7 +165,7 @@ void *unix_main(void *args) {
 	int ok = 1;
 	int len;
 	
-
+    unlink(SERVER_SOCK_FILE);
 	if ((fd = socket(PF_UNIX, SOCK_DGRAM, 0)) < 0) {
 		perror("socket");
 		ok = 0;
@@ -275,15 +277,4 @@ void *unix_main(void *args) {
 	}
 
     pthread_exit(NULL);
-}
-
-int main() {
-    pthread_t ptUnix;
-
-    unlink(SERVER_SOCK_FILE);
-    pthread_create(&ptUnix, NULL, unix_main, SERVER_SOCK_FILE);
-
-    pthread_join(ptUnix, NULL);
-    
-    return 0;
 }

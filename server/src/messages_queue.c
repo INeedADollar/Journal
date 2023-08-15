@@ -1,13 +1,15 @@
-#include "server_queue.h"
+#include "messages_queue.h"
 
 #include <stdlib.h>
+#include <string.h>
 
-typedef struct {
-    message* messages[1000];
-    int length;
-} messages_queue;
+static messages_queue* queue = NULL;
 
-static messages_queue* queue = calloc(sizeof(message));
+
+void initialize_messages_queue() {
+    queue = calloc(1, sizeof(messages_queue));
+}
+
 
 operation_status enqueue_message(message* message) {
     if(queue->length < 1000) {
@@ -30,4 +32,9 @@ message* dequeue_message() {
     }
 
     return (message*)NULL;
+}
+
+
+void destroy_messages_queue() {
+    free(queue);
 }

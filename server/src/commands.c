@@ -2,11 +2,11 @@
 #include "async_tasks.h"
 #include "logger.h"
 #include "message.h"
+#include "zip.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <zip/src/zip.h>
 #include <errno.h>
 #include <regex.h>
 #include <sys/stat.h>

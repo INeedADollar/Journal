@@ -3,9 +3,10 @@
 #include "utils.h"
 
 #include <string.h>
+#include <stdlib.h>
+
 
 static threadpool async_tasks_pool;
-
 
 void init_thread_pool() {
     async_tasks_pool = thpool_init(100);
@@ -20,7 +21,7 @@ void retrieve_journal_task(retrieve_journal_args* args) {
     free(args);
 }
 
-operation_status retrieve_journal_task(user_id id, char* journal_name) {
+operation_status create_retrieve_journal_task(user_id id, char* journal_name) {
     retrieve_journal_args* args = (retrieve_journal_args*)malloc(sizeof(retrieve_journal_args));
     args->id = id;
     args->journal_name = (char*)malloc(strlen(journal_name));
@@ -72,7 +73,7 @@ operation_status create_modify_journal_task(user_id id, char* journal_name, char
     strcpy(args->journal_name, journal_name);
 
     args->new_content = (char*)malloc(new_content_size);
-    strcpy(args->journal_content, new_content);
+    strcpy(args->new_content, new_content);
 
     return (operation_status)thpool_add_work(async_tasks_pool, (void*)modify_journal_task, (void*)args);
 }
@@ -80,4 +81,8 @@ operation_status create_modify_journal_task(user_id id, char* journal_name, char
 
 int tasks_running_count() {
     return thpool_num_threads_working(async_tasks_pool);
+}
+
+void destroy_thread_pool() {
+    thpool_destroy(async_tasks_pool);
 }

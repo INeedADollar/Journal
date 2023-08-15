@@ -1,15 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "commands.h"
+#include "server_defs.h"
 
-typedef enum {
-    OPERATION_SUCCESS = 0,
-    OPERATION_FAIL = -1
-} operation_status;
 
-static int STOP_SERVER = 0;
+void send_command_result_message(user_id id, command_result* result);
 
-void send_command_result_message(command_result* result);
+message_content_node* extract_value_from_content(message_content* content, char* key);
+
 
 #endif // UTILS_H

@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "commands.h"
 #include "messages_queue.h"
+#include "logger.h"
 
 #include <stdio.h>		
 #include <stdlib.h>
@@ -16,6 +17,8 @@
 #include <sys/select.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <errno.h>
+
 
 typedef struct {
 	size_t buffered_message_size;
@@ -37,7 +40,7 @@ operation_status init_server() {
 	}
 
     int reuse_address = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_address, 4) < 0) {
+    if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_address, 4) < 0) {
         LOG_ERROR("Cannot set reuse address option on socket. Error: ", strerror(errno));
         return OPERATION_FAIL;
     }
@@ -66,11 +69,11 @@ operation_status accept_new_client(fd_set* active_set, int server_socket_fd) {
 	client_socket_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);		
 
 	if (client_socket_fd < 0) {
-		LOG_ERROR("Connection with client failed. Error: ", strerror(errno))
+		LOG_ERROR("Connection with client failed. Error: ", strerror(errno));
 		return OPERATION_FAIL;
 	}
 	
-	LOG_INFO("Client %d connected.\n", client_socket_fd)
+	LOG_INFO("Client %d connected.\n", client_socket_fd);
     FD_SET(client_socket_fd, &active_set);
 	return OPERATION_SUCCESS;
 }
@@ -83,8 +86,8 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 	size_t received = recv(socket_fd, &part, size_to_read, 0);
 
 	if(received == OPERATION_FAIL) {
-		LOG_ERROR("Could not read from client %d", socket_fd)
-		disconnect_client(socket_fd);
+		LOG_ERROR("Could not read from client %d", socket_fd);
+		disconnect_client(0, socket_fd);
 		return OPERATION_FAIL;
 	}
 
@@ -95,7 +98,7 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 
 operation_status handle_client_command(fd_set* active_set, int client_socket_fd) {
 	message_header* header = NULL;
-	int received_len = 0;
+	size_t received_len = 0;
 	char read_message[1024];
 
 	if(!clients_data[client_socket_fd].header) {
@@ -130,7 +133,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		clients_data[client_socket_fd].buffered_message_size = 0;
 
 		if(!message) {
-			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", message_copy, header->user_id, client_socket_fd)
+			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", message_copy, header->user_id, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
@@ -142,7 +145,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		read_message[received_len] = '\0';
 		message* message = parse_message(client_socket_fd, read_message);
 		if(!message) {
-			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", read_message, header->user_id, client_socket_fd)
+			LOG_ERROR("Could not parse message from: %s, user_id: %lu, client_socket_id: %d", read_message, header->user_id, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
@@ -155,7 +158,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 }
 
 
-void inet_thread() {
+void inet_thread(void* args) {
     fd_set active_sockets_set, read_sockets_set;
     int server_socket_fd = init_server();
 	
@@ -176,7 +179,7 @@ void inet_thread() {
 	while(!STOP_SERVER) {
         read_sockets_set = active_sockets_set;
         if(select(FD_SETSIZE, &read_sockets_set, NULL, NULL, NULL) < 0) {
-			LOG_ERROR("Select failed. Error: ", strerror(errno))
+			LOG_ERROR("Select failed. Error: ", strerror(errno));
             pthread_exit(NULL);
         }
 
