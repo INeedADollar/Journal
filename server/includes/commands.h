@@ -4,13 +4,15 @@
 #include "server_defs.h"
 
 
-command_result* check_message_and_run_command(message* message);
+command_result* check_message_and_run_command(message_t* message);
 
 command_result* generate_id(int client_fd);
 
 command_result* create_journal(user_id id, char* journal_name);
 
 command_result* retrieve_journal(user_id id, char* journal_name);
+
+command_result* retrieve_journals(user_id id);
 
 command_result* import_journal(user_id id, char* journal_name, char* journal_data, size_t journal_data_size);
 

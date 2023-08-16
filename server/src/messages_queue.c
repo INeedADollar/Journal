@@ -11,7 +11,7 @@ void initialize_messages_queue() {
 }
 
 
-operation_status enqueue_message(message* message) {
+operation_status enqueue_message(message_t* message) {
     if(queue->length < 1000) {
         queue->messages[queue->length] = message;
         queue->length++;
@@ -22,16 +22,16 @@ operation_status enqueue_message(message* message) {
     return OPERATION_FAIL;
 }
 
-message* dequeue_message() {
+message_t* dequeue_message() {
     if(queue->length > 0) {
-        message* message = queue->messages[0];
+        message_t* message = queue->messages[0];
         memmove((void*)queue->messages, (void*)(queue->messages + 1), queue->length - 2);
         queue->length--;
 
         return message;
     }
 
-    return (message*)NULL;
+    return (message_t*)NULL;
 }
 
 
