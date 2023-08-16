@@ -29,9 +29,10 @@ void logger(char* level, char* message_format, va_list args) {
         local_time.tm_sec, level, log_message);
 
     if(log_file) {
-        fprintf(output, "%d-%02d-%02d %02d:%02d:%02d %s: %s", local_time.tm_year + 1900,
+        fprintf(log_file, "%d-%02d-%02d %02d:%02d:%02d %s: %s\n", local_time.tm_year + 1900,
             local_time.tm_mon + 1, local_time.tm_mday, local_time.tm_hour, local_time.tm_min,
             local_time.tm_sec, level, log_message); 
+        fflush(log_file);
     }
     
 }

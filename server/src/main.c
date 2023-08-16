@@ -12,6 +12,7 @@
 
 
 void stop_server(int signal) {
+    log_info("Stopping server...");
     STOP_SERVER = 1;
 }
 

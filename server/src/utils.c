@@ -94,3 +94,14 @@ message_content_node_data* extract_value_from_content(message_content* content, 
 
     return NULL;
 }
+
+
+// https://stackoverflow.com/questions/10347689/how-can-i-check-whether-a-string-ends-with-csv-in-c
+int string_ends_with(const char * str, const char * suffix) {
+  int str_len = strlen(str);
+  int suffix_len = strlen(suffix);
+
+  return 
+    (str_len >= suffix_len) &&
+    (0 == strcmp(str + (str_len-suffix_len), suffix));
+}

@@ -8,10 +8,12 @@ typedef enum {
     GENERATE_ID,
     CREATE_JOURNAL,
     RETRIEVE_JOURNAL,
+    RETRIEVE_JOURNALS,
     IMPORT_JOURNAL,
     MODIFY_JOURNAL,
     DELETE_JOURNAL,
-    DISCONNECT_CLIENT
+    DISCONNECT_CLIENT,
+    INVALID_COMMAND
 } command_types;
 
 typedef enum {
@@ -62,7 +64,7 @@ typedef struct {
     message_id id;
     message_header* header;
     message_content* content;
-} message;
+} message_t;
 
 
 typedef struct {
@@ -86,7 +88,7 @@ typedef struct {
 
 
 typedef struct {
-    message* messages[1000];
+    message_t* messages[1000];
     int length;
 } messages_queue;
 

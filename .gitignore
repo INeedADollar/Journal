@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+#Libs
+*/libs/*
+
 # Object files
 *.o
 *.ko
@@ -63,3 +66,6 @@ test.c
 
 #Misc
 pcd.txt
+
+#vcpkg
+vcpkg/

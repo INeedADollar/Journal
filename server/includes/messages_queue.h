@@ -6,9 +6,9 @@
 
 void initialize_messages_queue();
 
-operation_status enqueue_message(message* message);
+operation_status enqueue_message(message_t* message);
 
-message* dequeue_message();
+message_t* dequeue_message();
 
 void destroy_messages_queue();
 

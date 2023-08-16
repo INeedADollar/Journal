@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 #include "commands.h"
 #include "async_tasks.h"
 #include "logger.h"
@@ -14,6 +16,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include <dirent.h> 
 
 
 command_result* get_command_result(operation_status status, char* status_message, char* additional_data, size_t additional_data_size) {
@@ -41,7 +44,7 @@ command_result* check_journal_name(message_content_node_data* journal_name, user
     return NULL;
 }
 
-command_result* check_message_and_run_command(message* message) {
+command_result* check_message_and_run_command(message_t* message) {
     command_result* result = NULL;
     message_content_node_data* journal_name = extract_value_from_content(message->content, "journal-name");
     operation_status op_status;
@@ -62,11 +65,13 @@ command_result* check_message_and_run_command(message* message) {
         if(!result) {
             op_status = create_retrieve_journal_task(message->header->client_id, journal_name->value);
             if(op_status == OPERATION_FAIL) {
-                log_error("Could not create retrieve journal task for client %lu", message->header->client_id);
+                log_error("Could not create retrieve journal task for client %lu.", message->header->client_id);
                 result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
             }
         }
         break;
+    case RETRIEVE_JOURNALS:
+        result = retrieve_journals(message->header->client_id);
     case IMPORT_JOURNAL:
         result = check_journal_name(journal_name, message->header->client_id);
         if(result) {
@@ -82,7 +87,7 @@ command_result* check_message_and_run_command(message* message) {
         
         op_status = create_import_journal_task(message->header->client_id, journal_name->value, journal_data->value, journal_data->size);
         if(op_status == OPERATION_FAIL) {
-            log_error("Could not create import journal task for client %lu", message->header->client_id);
+            log_error("Could not create import journal task for client %lu.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
         }
         break;
@@ -94,14 +99,14 @@ command_result* check_message_and_run_command(message* message) {
 
         message_content_node_data* new_content = extract_value_from_content(message->content, "new-content");
         if(!new_content) {
-            log_error("Request for create journal made by client %lu is missing new_content key from content!", message->header->client_id);
+            log_error("Request for create journal made by client %lu is missing new_content key from content.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Key journal_data is missing from request content!", NULL, 0);
             break;
         }
         
         op_status = create_modify_journal_task(message->header->client_id, journal_name->value, new_content->value, new_content->size);
         if(op_status == OPERATION_FAIL) {
-            log_error("Could not create modify journal task for client %lu", message->header->client_id);
+            log_error("Could not create modify journal task for client %lu.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
         }
         break;
@@ -113,6 +118,8 @@ command_result* check_message_and_run_command(message* message) {
         break;
     case DISCONNECT_CLIENT:
         disconnect_client(message->header->client_id, message->id / 1000);
+    case INVALID_COMMAND:
+        result = get_command_result(OPERATION_FAIL, "Command type could not be determined.", NULL, 0);
     default:
         break;
     }
@@ -134,13 +141,39 @@ command_result* generate_id(int client_fd) {
 }
 
 
-command_result* create_journal(user_id id, char* journal_name) {
-    char journal_path[1024];
-    char dirname[512];
-    const char* zip_files[] = {
-        "1.txt"
-    };
+int get_number_of_user_journals(user_id id) {
+    struct dirent* journal;
+    char user_directory_path[30];
+    sprintf(user_directory_path, "./journals/%lu", id);
 
+    DIR* user_directory = opendir(user_directory_path);
+    int journals_count = -1;
+    
+    if(user_directory) {
+        journals_count++;
+        while ((journal = readdir(user_directory)) != NULL) {
+            if (journal->d_type == DT_REG && string_ends_with(journal->d_name, ".zip")) {
+                journals_count++;
+            }
+        }
+
+        closedir(user_directory);
+    }
+
+    return journals_count;
+}
+
+command_result* prepare_journal_creation(user_id id) {
+    int journals_count = get_number_of_user_journals(id);
+    if(journals_count == -1 && errno != ENOENT) {
+        return get_command_result(OPERATION_FAIL, "Operation could not be completed.", NULL, 0);
+    }
+
+    if(journals_count == 100) {
+        return get_command_result(OPERATION_FAIL, "Maximum limit of journals reached.", NULL, 0);
+    }
+
+    char dirname[30];
     sprintf(dirname, "journals/%lu", id);
     if(mkdir(dirname, 777) == OPERATION_FAIL && errno != EEXIST) {
         log_error("Directory %s could not be created for user with id %lu. Error: %s", id, strerror(errno));
@@ -148,11 +181,24 @@ command_result* create_journal(user_id id, char* journal_name) {
     }
 
     log_debug("Created directory %s for client with user id %lu", dirname, id);
+    return NULL;
+}
 
-    sprintf(journal_path, "%s/%s.zip", dirname, journal_name);
-    operation_status status = (operation_status)zip_create(dirname, (const char**)zip_files, 1);
+command_result* create_journal(user_id id, char* journal_name) {
+    command_result* result = prepare_journal_creation(id);
+    if(result) {
+        return result;
+    }
+
+    char journal_path[1024];
+    const char* zip_files[] = {
+        "1.txt"
+    };
+
+    sprintf(journal_path, "./journals/%lu/%s.zip", id, journal_name);
+    operation_status status = (operation_status)zip_create(journal_path, (const char**)zip_files, 1);
     if(status == OPERATION_FAIL) {
-        log_error("Zip %s could not be created for user with id %lu. Error: %s", id, strerror(errno));
+        log_error("Zip %s could not be created for user with id %lu. Error: %s.", id, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be created.", (char*)NULL, 0);
     }
 
@@ -164,7 +210,6 @@ command_result* create_journal(user_id id, char* journal_name) {
 void get_journal_path(user_id id, char* journal_name, char* buffer) {
     sprintf(buffer, "./journals/%lu/%s.zip", id, journal_name);
 }
-
 
 command_result* retrieve_journal(user_id id, char* journal_name) {
     char journal_path[1024];
@@ -191,18 +236,58 @@ command_result* retrieve_journal(user_id id, char* journal_name) {
 }
 
 
+command_result* retrieve_journals(user_id id) {
+    struct dirent* journal;
+    char user_directory_path[30];
+    sprintf(user_directory_path, "./journals/%lu", id);
+
+    DIR* user_directory = opendir(user_directory_path);
+    size_t journals_size = 100, current_journals_size = 0;
+    char* journals = (char*)malloc(journals_size);
+
+    if(user_directory) {
+        while ((journal = readdir(user_directory)) != NULL) {
+            if (journal->d_type != DT_REG || !string_ends_with(journal->d_name, ".zip")) {
+                continue;
+            }
+
+            current_journals_size += strlen(journal->d_name) + 30;
+            if(current_journals_size > journals_size) {
+                journals_size *= 2;
+                journals = (char*)realloc((void*)journals, journals_size);
+            }
+
+            sprintf(journals, "<journal_name>%s</journal_name>", journal->d_name);
+        }
+
+        closedir(user_directory);
+    }
+
+    if(strcmp(journals, "") == 0) {
+        return get_command_result(OPERATION_FAIL, "No journals found.", NULL, 0);
+    }
+
+    return get_command_result(OPERATION_SUCCESS, "Journals retrieved succesfully.", journals, current_journals_size);
+}
+
+
 command_result* import_journal(user_id id, char* journal_name, char* journal_data, size_t journal_data_size) {
+    command_result* result = prepare_journal_creation(id);
+    if(result) {
+        return result;
+    }
+
     char journal_path[1024];
     get_journal_path(id, journal_name, journal_path);
     
     int journal_fd = open(journal_path, O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP);
     if(journal_fd == OPERATION_FAIL) {
-        log_error("The journal %s could not be created before import! Error: %s", journal_path, strerror(errno));
+        log_error("The journal %s could not be created before import! Error: %s.", journal_path, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be imported.", (char*)NULL, 0);
     }
 
     if(write(journal_fd, journal_data, journal_data_size) == OPERATION_FAIL) {
-        log_error("The journal %s could not be imported because content of it cannot be written! Error: %s", journal_path, strerror(errno));
+        log_error("The journal %s could not be imported because content of it cannot be written! Error: %s.", journal_path, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be imported.", (char*)NULL, 0);
     }
     
@@ -266,13 +351,13 @@ command_result* modify_journal(user_id id, char* journal_name, char* new_content
 
     struct zip_t* journal_zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
     if(!journal_zip) {
-        log_error("The journal %s could not be found! Error: %s", journal_path, strerror(errno));
+        log_error("The journal %s could not be found! Error: %s.", journal_path, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be found on the server.", (char*)NULL, 0);
     }
 
     struct zip_t *new_content_zip = zip_stream_open(new_content, new_content_size, ZIP_DEFAULT_COMPRESSION_LEVEL, 'r');
     if(!new_content_zip) {
-        log_error("Sent journal could not be opened! Error: %s", journal_path, strerror(errno));
+        log_error("Sent journal could not be opened! Error: %s.", journal_path, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Sent journal could not be opened.", (char*)NULL, 0);
     }
 
@@ -288,7 +373,7 @@ command_result* delete_journal(user_id id, char* journal_name) {
     get_journal_path(id, journal_name, journal_path);
 
     if(remove(journal_path) == OPERATION_FAIL) {
-        log_error("Journal %s could not be deleted! Error: %s", journal_path, strerror(errno));
+        log_error("Journal %s could not be deleted! Error: %s.", journal_path, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be deleted.", (char*)NULL, 0);
     }
 
