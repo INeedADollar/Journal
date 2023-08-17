@@ -1,7 +1,7 @@
 CC  = gcc
 CFLAGS = -std=c99
 
-SERVER_FLAGS = -I ./server/includes -I ./server/libs/C-Thread-Pool -I /usr/local/include/zip
+SERVER_FLAGS = -I ./server/include -I ./server/libs/C-Thread-Pool -I /usr/local/include/zip
 SERVER_LIBS = -lzip -lpthread
 SERVER_SRC_FILES := $(shell find ./server/src/*.c ./server/libs/C-Thread-Pool/*.c ! -name "example.c" ! -name "main.c")
 

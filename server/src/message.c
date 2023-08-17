@@ -67,10 +67,9 @@ message_header* parse_header(char* partial_message) {
 }
 
 
-// de reparat functia cu size ul
 message_content* parse_content(char* content_str, size_t content_size) {
-    char start_tag[] = "<;23sad32fefs.>";
-    char end_tag[] = "</sasadasfds.32.asd2qasd>\n";
+    char start_tag[] = "<journal_request_key>";
+    char end_tag[] = "</journal_request_key>\n";
 
     char *target = NULL;
     char *current_pos = content_str;
@@ -91,10 +90,10 @@ message_content* parse_content(char* content_str, size_t content_size) {
         current_content_size -= strlen(current_pos); 
 
         if (start = strstr(key_end + 1, start_tag)) {
-            start += 16;
-            current_content_size -= 16;
+            start += 22;
+            current_content_size -= 22;
 
-            if (end = memmem((void*)start, current_content_size, (void*)end_tag, 27)) {
+            if (end = memmem((void*)start, current_content_size, (void*)end_tag, 24)) {
                 target = malloc((size_t)(end - start + 1));
                 memcpy(target, start, end - start);
                 target[end - start] = '\0';
@@ -144,14 +143,11 @@ message_t* parse_message(int socket_fd, char* message_str) {
     message->content = NULL;
 
     char* content_str = strstr("Content\n", message_str);
-    if(!content_str) {
-        delete_message(message);
-        return NULL;
+    if(content_str) {
+        *(content_str) = '\0';
+        size_t content_length = header->length - strlen(message_str) - 8;
+        message->content = parse_content(content_str + 9, content_length);
     }
-
-    *(content_str) = '\0';
-    size_t content_length = header->length - strlen(message_str) - 8;
-    message->content = parse_content(content_str + 9, content_length);
 
     return message;
 }
