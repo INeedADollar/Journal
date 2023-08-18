@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>495</width>
+    <width>686</width>
     <height>335</height>
    </rect>
   </property>
@@ -98,7 +98,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_3">
+          <widget class="QPushButton" name="editJournal">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -140,6 +140,24 @@
            </property>
            <property name="text">
             <string>Create journal</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deleteJournal">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Delete journal</string>
            </property>
           </widget>
          </item>
