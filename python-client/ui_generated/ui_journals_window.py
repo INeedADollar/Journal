@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'journals_window.ui'
+# Form implementation generated from reading ui file 'ui/journals_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_journalsWindow(object):
     def setupUi(self, journalsWindow):
         journalsWindow.setObjectName("journalsWindow")
-        journalsWindow.resize(495, 335)
+        journalsWindow.resize(686, 335)
         self.verticalLayout = QtWidgets.QVBoxLayout(journalsWindow)
         self.verticalLayout.setObjectName("verticalLayout")
         self.widget = QtWidgets.QWidget(journalsWindow)
@@ -26,6 +26,9 @@ class Ui_journalsWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.journalsContainer)
         self.gridLayout.setObjectName("gridLayout")
         self.statusLabel = QtWidgets.QLabel(self.journalsContainer)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.statusLabel.setFont(font)
         self.statusLabel.setText("")
         self.statusLabel.setObjectName("statusLabel")
         self.gridLayout.addWidget(self.statusLabel, 0, 1, 1, 1)
@@ -56,16 +59,16 @@ class Ui_journalsWindow(object):
 "}")
         self.viewJournal.setObjectName("viewJournal")
         self.horizontalLayout.addWidget(self.viewJournal)
-        self.pushButton_3 = QtWidgets.QPushButton(self.buttonsContainer)
-        self.pushButton_3.setMinimumSize(QtCore.QSize(0, 50))
+        self.editJournal = QtWidgets.QPushButton(self.buttonsContainer)
+        self.editJournal.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.pushButton_3.setFont(font)
-        self.pushButton_3.setStyleSheet("QPushButton {\n"
+        self.editJournal.setFont(font)
+        self.editJournal.setStyleSheet("QPushButton {\n"
 "    padding: 10px;\n"
 "}")
-        self.pushButton_3.setObjectName("pushButton_3")
-        self.horizontalLayout.addWidget(self.pushButton_3)
+        self.editJournal.setObjectName("editJournal")
+        self.horizontalLayout.addWidget(self.editJournal)
         self.createJournal = QtWidgets.QPushButton(self.buttonsContainer)
         self.createJournal.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
@@ -76,6 +79,13 @@ class Ui_journalsWindow(object):
 "}")
         self.createJournal.setObjectName("createJournal")
         self.horizontalLayout.addWidget(self.createJournal)
+        self.deleteJournal = QtWidgets.QPushButton(self.buttonsContainer)
+        self.deleteJournal.setMinimumSize(QtCore.QSize(0, 50))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.deleteJournal.setFont(font)
+        self.deleteJournal.setObjectName("deleteJournal")
+        self.horizontalLayout.addWidget(self.deleteJournal)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.exit = QtWidgets.QPushButton(self.buttonsContainer)
@@ -99,8 +109,9 @@ class Ui_journalsWindow(object):
         journalsWindow.setWindowTitle(_translate("journalsWindow", "Form"))
         self.importJournal.setText(_translate("journalsWindow", "Import journal"))
         self.viewJournal.setText(_translate("journalsWindow", "View journal"))
-        self.pushButton_3.setText(_translate("journalsWindow", "Edit journal"))
+        self.editJournal.setText(_translate("journalsWindow", "Edit journal"))
         self.createJournal.setText(_translate("journalsWindow", "Create journal"))
+        self.deleteJournal.setText(_translate("journalsWindow", "Delete journal"))
         self.exit.setText(_translate("journalsWindow", "Exit"))
 
 

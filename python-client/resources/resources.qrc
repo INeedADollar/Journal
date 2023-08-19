@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="journal">
+    <file>../assets/journal-icon.png</file>
+  </qresource>
+</RCC>

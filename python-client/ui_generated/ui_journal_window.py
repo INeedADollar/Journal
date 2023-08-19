@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'journal_window.ui'
+# Form implementation generated from reading ui file 'ui/journal_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -24,80 +24,94 @@ class Ui_journalWindow(object):
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.buttonContainer)
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.pushButton = QtWidgets.QPushButton(self.buttonContainer)
-        self.pushButton.setMinimumSize(QtCore.QSize(0, 50))
+        self.goBackward = QtWidgets.QPushButton(self.buttonContainer)
+        self.goBackward.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.pushButton.setFont(font)
-        self.pushButton.setStyleSheet("QPushButton {\n"
+        self.goBackward.setFont(font)
+        self.goBackward.setStyleSheet("QPushButton {\n"
 "    padding: 10px;\n"
 "}")
-        self.pushButton.setObjectName("pushButton")
-        self.horizontalLayout_2.addWidget(self.pushButton)
+        self.goBackward.setObjectName("goBackward")
+        self.horizontalLayout_2.addWidget(self.goBackward)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
-        self.pushButton_3 = QtWidgets.QPushButton(self.buttonContainer)
-        self.pushButton_3.setMinimumSize(QtCore.QSize(0, 50))
+        self.saveChanges = QtWidgets.QPushButton(self.buttonContainer)
+        self.saveChanges.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.pushButton_3.setFont(font)
-        self.pushButton_3.setStyleSheet("QPushButton {\n"
+        self.saveChanges.setFont(font)
+        self.saveChanges.setStyleSheet("QPushButton {\n"
 "    padding: 10px;\n"
 "}")
-        self.pushButton_3.setObjectName("pushButton_3")
-        self.horizontalLayout_2.addWidget(self.pushButton_3)
+        self.saveChanges.setObjectName("saveChanges")
+        self.horizontalLayout_2.addWidget(self.saveChanges)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
-        self.pushButton_2 = QtWidgets.QPushButton(self.buttonContainer)
-        self.pushButton_2.setMinimumSize(QtCore.QSize(0, 50))
+        self.goForward = QtWidgets.QPushButton(self.buttonContainer)
+        self.goForward.setMinimumSize(QtCore.QSize(0, 50))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.pushButton_2.setFont(font)
-        self.pushButton_2.setStyleSheet("QPushButton {\n"
+        self.goForward.setFont(font)
+        self.goForward.setStyleSheet("QPushButton {\n"
 "    padding: 10px;\n"
 "}")
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.horizontalLayout_2.addWidget(self.pushButton_2)
+        self.goForward.setObjectName("goForward")
+        self.horizontalLayout_2.addWidget(self.goForward)
         self.verticalLayout_3.addWidget(self.buttonContainer)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setSpacing(0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.textEdit = QtWidgets.QTextEdit(journalWindow)
-        self.textEdit.setStyleSheet("QTextEdit {\n"
+        self.leftPage = QtWidgets.QTextEdit(journalWindow)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.leftPage.setFont(font)
+        self.leftPage.setStyleSheet("QTextEdit {\n"
 "    border: 0.5px solid black;\n"
 "    border-bottom: none;\n"
 "}")
-        self.textEdit.setObjectName("textEdit")
-        self.verticalLayout_2.addWidget(self.textEdit)
-        self.lineEdit = QtWidgets.QLineEdit(journalWindow)
-        self.lineEdit.setStyleSheet("QLineEdit {\n"
+        self.leftPage.setObjectName("leftPage")
+        self.verticalLayout_2.addWidget(self.leftPage)
+        self.leftPageNumber = QtWidgets.QLineEdit(journalWindow)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.leftPageNumber.setFont(font)
+        self.leftPageNumber.setStyleSheet("QLineEdit {\n"
 "    border: 0.5px solid black;\n"
 "    border-top: none;\n"
 "}")
-        self.lineEdit.setText("")
-        self.lineEdit.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-        self.lineEdit.setObjectName("lineEdit")
-        self.verticalLayout_2.addWidget(self.lineEdit)
+        self.leftPageNumber.setText("")
+        self.leftPageNumber.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.leftPageNumber.setReadOnly(True)
+        self.leftPageNumber.setObjectName("leftPageNumber")
+        self.verticalLayout_2.addWidget(self.leftPageNumber)
         self.horizontalLayout.addLayout(self.verticalLayout_2)
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.textEdit_2 = QtWidgets.QTextEdit(journalWindow)
-        self.textEdit_2.setStyleSheet("QTextEdit {\n"
+        self.rightPage = QtWidgets.QTextEdit(journalWindow)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.rightPage.setFont(font)
+        self.rightPage.setStyleSheet("QTextEdit {\n"
 "    border: 0.5px solid black;\n"
 "    border-bottom: none;\n"
 "}")
-        self.textEdit_2.setObjectName("textEdit_2")
-        self.verticalLayout.addWidget(self.textEdit_2)
-        self.lineEdit_2 = QtWidgets.QLineEdit(journalWindow)
-        self.lineEdit_2.setStyleSheet("QLineEdit {\n"
+        self.rightPage.setObjectName("rightPage")
+        self.verticalLayout.addWidget(self.rightPage)
+        self.rightPageNumber = QtWidgets.QLineEdit(journalWindow)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.rightPageNumber.setFont(font)
+        self.rightPageNumber.setStyleSheet("QLineEdit {\n"
 "    border: 0.5px solid black;\n"
 "    border-top: none;\n"
 "}")
-        self.lineEdit_2.setObjectName("lineEdit_2")
-        self.verticalLayout.addWidget(self.lineEdit_2)
+        self.rightPageNumber.setReadOnly(True)
+        self.rightPageNumber.setObjectName("rightPageNumber")
+        self.verticalLayout.addWidget(self.rightPageNumber)
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.verticalLayout_3.addLayout(self.horizontalLayout)
 
@@ -107,9 +121,9 @@ class Ui_journalWindow(object):
     def retranslateUi(self, journalWindow):
         _translate = QtCore.QCoreApplication.translate
         journalWindow.setWindowTitle(_translate("journalWindow", "Form"))
-        self.pushButton.setText(_translate("journalWindow", "<--"))
-        self.pushButton_3.setText(_translate("journalWindow", "Save changes"))
-        self.pushButton_2.setText(_translate("journalWindow", "-->"))
+        self.goBackward.setText(_translate("journalWindow", "<--"))
+        self.saveChanges.setText(_translate("journalWindow", "Save changes"))
+        self.goForward.setText(_translate("journalWindow", "-->"))
 
 
 if __name__ == "__main__":
