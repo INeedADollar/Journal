@@ -8,7 +8,7 @@
 #include <stdarg.h>
 
 
-FILE* log_file = NULL;
+static FILE* log_file;
 
 void logger(char* level, char* message_format, va_list args) {
     time_t current_time = time(NULL);

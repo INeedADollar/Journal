@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static messages_queue* queue = NULL;
+static messages_queue* queue;
 
 
 void initialize_messages_queue() {

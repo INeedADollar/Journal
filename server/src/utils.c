@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 void get_command_type_string(command_types type, char* buffer) {
     switch(type) {
     case GENERATE_ID:
@@ -19,18 +20,27 @@ void get_command_type_string(command_types type, char* buffer) {
     case RETRIEVE_JOURNAL:
         strcpy(buffer, "RETRIEVE_JOURNAL");
         break;
+    case RETRIEVE_JOURNALS:
+        strcpy(buffer, "RETRIEVE_JOURNALS");
+        break;
     case MODIFY_JOURNAL:
         strcpy(buffer, "MODIFY_JOURNAL");
         break;
     case DELETE_JOURNAL:
         strcpy(buffer, "DELETE_JOURNAL");
         break;
+    case DISCONNECT_CLIENT:
+        strcpy(buffer, "DISCONNECT_CLIENT");
+        break;
+    case INVALID_COMMAND:
+        strcpy(buffer, "INVALID_COMMAND");
+        break;
     default:
         break;
     }
 }
 
-
+// Change tags to coresponding tags and change message_length to content_length
 operation_status send_command_result_message(user_id id, command_result* result) { 
     size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
     size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 52;

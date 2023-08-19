@@ -46,7 +46,7 @@ command_types get_command_type(char* type_str) {
     return INVALID_COMMAND;
 }
 
-
+// Change message_length to content_length
 message_header* parse_header(char* partial_message) {
     int message_length, user_id;
     char command_type[18];
@@ -66,7 +66,7 @@ message_header* parse_header(char* partial_message) {
     return header;
 }
 
-
+// Change tags to coresponding tags
 message_content* parse_content(char* content_str, size_t content_size) {
     char start_tag[] = "<journal_request_key>";
     char end_tag[] = "</journal_request_key>\n";

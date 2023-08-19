@@ -69,6 +69,10 @@ test.c
 
 #Misc
 pcd.txt
+server_log.log
 
 #vcpkg
 vcpkg/
+
+#Python
+**/__pycache__/

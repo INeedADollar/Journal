@@ -192,7 +192,8 @@ command_result* create_journal(user_id id, char* journal_name) {
 
     char journal_path[1024];
     const char* zip_files[] = {
-        "1.txt"
+        "1.txt",
+        "2.txt"
     };
 
     sprintf(journal_path, "./journals/%lu/%s.zip", id, journal_name);
@@ -270,7 +271,7 @@ command_result* retrieve_journals(user_id id) {
     return get_command_result(OPERATION_SUCCESS, "Journals retrieved succesfully.", journals, current_journals_size);
 }
 
-
+// Add a page if pages number is odd
 command_result* import_journal(user_id id, char* journal_name, char* journal_data, size_t journal_data_size) {
     command_result* result = prepare_journal_creation(id);
     if(result) {

@@ -78,12 +78,12 @@ operation_status accept_new_client(fd_set* active_set, int server_socket_fd) {
 	return OPERATION_SUCCESS;
 }
 
-
+// Remove client from fd_set when disconnected
 operation_status read_message_part(int socket_fd, char* buffer, size_t* current_size, size_t message_size) {
     char part[1024];
 	size_t size_to_read_with_header = message_size - *current_size < 1024 ? message_size - *current_size : 1024;
     size_t size_to_read = message_size == 0 ? 100 : size_to_read_with_header;
-	size_t received = recv(socket_fd, &part, size_to_read, 0);
+	ssize_t received = recv(socket_fd, &part, size_to_read, 0);
 
 	if(received == OPERATION_FAIL) {
 		log_error("Could not read from client %d.", socket_fd);
