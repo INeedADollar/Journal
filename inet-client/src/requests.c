@@ -24,6 +24,14 @@ typedef enum {
     INVALID_COMMAND
 } request_type;
 
+typedef struct {
+    request_type type;
+    char* journal_name;
+    char* content_key;
+    char* data;
+    size_t data_size;
+} async_notif_thread_args;
+
 static notification_callback nottif_callback;
 static int socket_fd;
 static unsigned long id = -1;
@@ -267,7 +275,7 @@ void get_user_id() {
     free(resp->status_message);
     free(resp->data);
     free(resp);
-    
+
     if(user_id == 0 || errno == ERANGE) {
         log_error("Could not register client with the server.");
         disconnect_client();
@@ -305,23 +313,10 @@ void init_requests(char* server_address, int port, notification_callback callbac
 response* create_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
     char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s", journal_name);
+    sprintf(content, "journal-name=%s\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_message(CREATE_JOURNAL, (char*)NULL, 0, &request_message_size);
-    send_request(request_message, request_message_size);
-
-    return get_response();
-}
-
-
-response* retrieve_journal(char* journal_name) {
-    size_t journal_name_size = strlen(journal_name);
-    char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s", journal_name);
-
-    size_t request_message_size;
-    char* request_message = get_message(RETRIEVE_JOURNAL, (char*)NULL, 0, &request_message_size);
+    char* request_message = get_message(CREATE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -330,30 +325,123 @@ response* retrieve_journal(char* journal_name) {
 
 response* retrieve_journals() {
     size_t request_message_size;
-    char* request_message = get_message(RETRIEVE_JOURNAL, (char*)NULL, 0, &request_message_size);
+    char* request_message = get_message(RETRIEVE_JOURNALS, (char*)NULL, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
 }
 
-response* import_journal(char* journal_name, char* journal_content, size_t journal_content_size) {
-
-}
-
-response* modify_journal(char* journal_name, char* modified_pages, size_t modified_pages_size) {
-
-}
 
 response* delete_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
     char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s", journal_name);
+    sprintf(content, "journal-name=%s\n", journal_name);
 
     size_t request_message_size;
     char* request_message = get_message(DELETE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
+}
+
+
+void async_operation_thread(async_notif_thread_args* args) {
+    size_t journal_name_size = strlen(args->journal_name);
+    size_t content_key_size = strlen(args->content_key);
+    char content[journal_name_size + args->data_size + content_key_size + 14];
+    
+    char format[content_key_size + 20];
+    if(args->data) {
+        strcpy("journal-name=%s\n%s=");
+        sprintf(content, format, args->journal_name, args->content_key);
+        memcpy((void*)(content + journal_name_size + content_key_size + 16), (void*)args->data, args->data_size);
+    }
+    else {
+        strcpy("journal-name=%s\n");
+        sprintf(content, format, args->journal_name);
+    }
+
+    size_t request_message_size;
+    char* request_message = get_message(args->type, content, 0, &request_message_size);
+    send_request(request_message, request_message_size);
+
+    response* response = get_response();
+    if(response) {
+        nottif_callback(response);
+    }
+
+    free(args->journal_name);
+    if(args->data) {
+        free(args->content_key);
+        free(args->data);
+    }
+    free(args);
+}
+
+
+int retrieve_journal(char* journal_name) {
+    async_notif_thread_args* args = (async_notif_thread_args*)malloc(sizeof(async_notif_thread_args));
+    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->content_key = (char*)NULL;
+    args->data = (char*)NULL;
+    args->data_size = 0;
+    args->type = RETRIEVE_JOURNAL;
+
+    strcpy(args->journal_name, journal_name);
+
+    pthread_t thread;
+    int res = pthread_create(&thread, (pthread_attr_t*)NULL, (void * (*)(void *))async_operation_thread, (void*)args);
+    if(res != 0) {
+        log_error("Could not create retrieve journal thread. Error: %s", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int import_journal(char* journal_name, char* journal_content, size_t journal_content_size) {
+    async_notif_thread_args* args = (async_notif_thread_args*)malloc(sizeof(async_notif_thread_args));
+    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->content_key = (char*)malloc(16);
+    args->data = (char*)malloc(journal_content_size);
+    args->data_size = journal_content_size;
+    args->type = IMPORT_JOURNAL;
+
+    strcpy(args->journal_name, journal_name);
+    strcpy(args->content_key, "journal-content");
+    strcpy(args->data, journal_content);
+
+    pthread_t thread;
+    int res = pthread_create(&thread, (pthread_attr_t*)NULL, (void * (*)(void *))async_operation_thread, (void*)args);
+    if(res != 0) {
+        log_error("Could not create import journal thread. Error: %s", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+int modify_journal(char* journal_name, char* modified_pages, size_t modified_pages_size) {
+    async_notif_thread_args* args = (async_notif_thread_args*)malloc(sizeof(async_notif_thread_args));
+    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->content_key = (char*)malloc(16);
+    args->data = (char*)malloc(modified_pages_size);
+    args->data_size = modified_pages_size;
+    args->type = MODIFY_JOURNAL;
+
+    strcpy(args->journal_name, journal_name);
+    strcpy(args->content_key, "journal-content");
+    strcpy(args->data, modified_pages);
+
+    pthread_t thread;
+    int res = pthread_create(&thread, (pthread_attr_t*)NULL, (void * (*)(void *))async_operation_thread, (void*)args);
+    if(res != 0) {
+        log_error("Could not create modify journal thread. Error: %s", strerror(errno));
+        return -1;
+    }
+
+    return 0;
 }
 
 
