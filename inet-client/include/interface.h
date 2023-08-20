@@ -2,7 +2,7 @@
 #define INTERFACE_H
 
 
-int STOP_CLIENT = 0;
+static int STOP_CLIENT_FLAG = 0;
 
 void init_interface();
 

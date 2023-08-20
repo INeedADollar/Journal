@@ -2,9 +2,9 @@
 #define COMMANDS_H
 
 #include "server_defs.h"
+#include <sys/select.h>
 
-
-command_result* check_message_and_run_command(message_t* message);
+command_result* check_message_and_run_command(message_t* message, fd_set* active_set);
 
 command_result* generate_id(int client_fd);
 
@@ -20,7 +20,7 @@ command_result* modify_journal(user_id id, char* journal_name, char* new_content
 
 command_result* delete_journal(user_id id, char* journal_name);
 
-operation_status disconnect_client(user_id id, int client_fd);
+operation_status disconnect_client(user_id id, int client_fd, fd_set* active_set);
 
 
 #endif // COMMANDS_H

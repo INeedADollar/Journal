@@ -1,6 +1,8 @@
 #ifndef REQUESTS_H
 #define REQUESTS_H
 
+#include <stddef.h>
+
 
 typedef enum {
     FAIL,

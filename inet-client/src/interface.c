@@ -28,11 +28,11 @@ void notif_callback(response* resp, request_type type) {
 
     char message[strlen(resp->status_message) + 100];
     if(type == IMPORT_JOURNAL) {
-        sprinf(message, "%s\n%s", journal_imported, resp->status_message);
+        sprintf(message, "%s\n%s", journal_imported, resp->status_message);
         free(journal_imported);
     }
     else {
-        sprinf(message, "%s\n%s", journal_saved, resp->status_message);
+        sprintf(message, "%s\n%s", journal_saved, resp->status_message);
         free(journal_saved);
     }
 
@@ -51,7 +51,7 @@ void print_controls() {
 void print_menu() {
     system("clear");
     for(size_t i = 0; i < journals_count; i++) {
-        printf("%zu. %s", journals_count + 1, p);
+        printf("%zu. %s", journals_count + 1, journals[i]);
     }
 
     print_controls();
@@ -60,7 +60,7 @@ void print_menu() {
 
 void show_create_journal_screen() {
     system("clear");
-    puts("Create journal\n")
+    puts("Create journal\n");
     puts("Input journal name: ");
 
     char* journal_name = NULL;
@@ -114,7 +114,7 @@ int get_zip_content(char* file_path, char** buffer, size_t* size) {
     }
 
     size_t result = fread(*buffer, 1, *size, file);
-    if (result != size) {
+    if (result != *size) {
         log_error("Error reading file. Error: %s", strerror(errno));
         free(*buffer);
         fclose(file);
@@ -127,7 +127,7 @@ int get_zip_content(char* file_path, char** buffer, size_t* size) {
 
 void show_import_journal_screen() {
     if(journal_imported ) {
-        puts("A journal is already importing. Try again later.").
+        puts("A journal is already importing. Try again later.");
         sleep(1000);
         return;
     }
@@ -192,7 +192,7 @@ void show_import_journal_screen() {
 
 void show_journal_screen(size_t journal_nr) {
     if(journal_saved && strcmp(journal_saved, journals[journal_nr])) {
-        puts("Selected journal is in saving process. Try again later.").
+        puts("Selected journal is in saving process. Try again later.");
         sleep(1000);
         return;
     }
@@ -241,7 +241,7 @@ void show_journal_screen(size_t journal_nr) {
     system("clear");
     printf("Opening %s\n...", journals[journal_nr]);
 
-    char command[150];
+    char command[600];
     sprintf(command, "/usr/bin/python3 ./journal_editor/editor.py --journal %s", journal_path);
     FILE* editor_output = popen(command, "r");
     if(!editor_output) {
@@ -258,7 +258,7 @@ void show_journal_screen(size_t journal_nr) {
         return;
     }
 
-    int res = pclose(command_output);
+    int res = pclose(editor_output);
     if(res < 0) {
         log_error("Could not close journal editor output file. Error: %s", strerror(errno));
     }
@@ -288,8 +288,8 @@ void show_journal_screen(size_t journal_nr) {
             sleep(1000);
         }
 
-        journal_saved = (char*)malloc(strlen(journal_name + 1));
-        strcpy(journal_saved, journal_name);
+        journal_saved = (char*)malloc(strlen(journals[journal_nr]) + 1);
+        strcpy(journal_saved, journals[journal_nr]);
     }
 
     puts("Returning to main menu...");
@@ -337,7 +337,7 @@ void get_and_handle_choice() {
     free(choice_str);
 
     if(res < 1 || res == EOF) {
-        puts("Invalid command. Try again.\n")
+        puts("Invalid command. Try again.\n");
         sleep(1000);
         return;
     }
@@ -365,14 +365,14 @@ void get_and_handle_choice() {
         exit_app();
         break;
     default:
-        puts("Invalid command. Try again.\n")
+        puts("Invalid command. Try again.\n");
         break;
     }
 }
 
 
 void start_event_loop() {
-    while(STOP_CLIENT) {
+    while(STOP_CLIENT_FLAG) {
         get_and_handle_choice();
         print_menu();
     }
@@ -386,7 +386,7 @@ void init_interface() {
     response* resp = retrieve_journals();
 
     if(!resp || resp->status == FAIL || !resp->data) {
-        log_info("There are no journals found. Create or import one.")
+        log_info("There are no journals found. Create or import one.");
     }
     else {
         resp->data[resp->data_size] = '\0';

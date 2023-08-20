@@ -51,7 +51,7 @@ message_header* parse_header(char* partial_message) {
     size_t content_length, user_id;
     char command_type[18];
 
-    int res = sscanf(partial_message, "Header\ncommand-type<::::>%18s\ncontent-length<::::>%zu\nuser-id<::::>%d\n", 
+    int res = sscanf(partial_message, "Header\ncommand-type<::::>%18s\ncontent-length<::::>%zu\nuser-id<::::>%lu\n", 
         command_type, &content_length, &user_id);
     
     if(res < 2) {

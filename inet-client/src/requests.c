@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 
 typedef struct {
@@ -104,11 +105,11 @@ char* get_request_message(request_type type, char* content, size_t content_size,
     char request_type_str[18];
 
     get_request_type_string(type, request_type_str);
-    sprintf(message, "Header\ncommand-type<::::>%s\ncontent-length<::::>%d\nuser-id<::::>%lu\nContent\n",
+    sprintf(message, "Header\ncommand-type<::::>%18s\ncontent-length<::::>%zu\nuser-id<::::>%lu\nContent\n",
         request_type_str, content_size, id);
 
     size_t current_message_size = strlen(message);
-    memcpy((void*)(message + strlen(message), (void*)content, content_size);
+    memcpy((void*)(message + strlen(message)), (void*)content, content_size);
 
     *message_size = current_message_size + content_size;
     return message;
@@ -138,7 +139,7 @@ response* get_response() {
     char request_type[18];
     size_t content_length;
     unsigned long user_id;
-    int vars_count = sscanf(initial_message, "Header\ncommand-type<::::>%s\ncontent-length<::::>%d\nuser-id<::::>%lu\nContent\n",
+    int vars_count = sscanf(initial_message, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\nContent\n",
         request_type, &content_length, &user_id);
 
     if(vars_count < 3 || vars_count == EOF) {
@@ -255,11 +256,11 @@ void get_user_id() {
     if(id_file) {
         char id_str[15];
         fgets(id_str, 15, id_file);
-        id = strtoul(resp->data, (char**)NULL, 10);
+        id = strtoul(id_str, (char**)NULL, 10);
     }
     else {
         size_t request_message_size;
-        char* request_message = get_message(GENERATE_ID, (char*)NULL, 0, &request_message_size);
+        char* request_message = get_request_message(GENERATE_ID, (char*)NULL, 0, &request_message_size);
         send_request(request_message, request_message_size);
 
         response* resp = get_response();
@@ -282,7 +283,7 @@ void get_user_id() {
     if(!id_file) {
         id_file = fopen("./id.user", "w+");
         if(!id_file) {
-            log_warning("Could not save user id.")
+            log_warning("Could not save user id.");
             return;
         }
 
@@ -331,7 +332,7 @@ response* create_journal(char* journal_name) {
     sprintf(content, "journal-name=%s\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_message(CREATE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(CREATE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -344,7 +345,7 @@ response* retrieve_journal(char* journal_name) {
     sprintf(content, "journal-name=%s\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_message(RETRIEVE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(RETRIEVE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -353,7 +354,7 @@ response* retrieve_journal(char* journal_name) {
 
 response* retrieve_journals() {
     size_t request_message_size;
-    char* request_message = get_message(RETRIEVE_JOURNALS, (char*)NULL, 0, &request_message_size);
+    char* request_message = get_request_message(RETRIEVE_JOURNALS, (char*)NULL, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -366,7 +367,7 @@ response* delete_journal(char* journal_name) {
     sprintf(content, "journal-name=%s\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_message(DELETE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(DELETE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -380,17 +381,17 @@ void async_operation_thread(async_notif_thread_args* args) {
     
     char format[content_key_size + 20];
     if(args->data) {
-        strcpy("journal-name=%s\n%s=");
+        strcpy(format, "journal-name=%s\n%s=");
         sprintf(content, format, args->journal_name, args->content_key);
         memcpy((void*)(content + journal_name_size + content_key_size + 16), (void*)args->data, args->data_size);
     }
     else {
-        strcpy("journal-name=%s\n");
+        strcpy(format, "journal-name=%s\n");
         sprintf(content, format, args->journal_name);
     }
 
     size_t request_message_size;
-    char* request_message = get_message(args->type, content, 0, &request_message_size);
+    char* request_message = get_request_message(args->type, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     response* response = get_response();
@@ -454,7 +455,7 @@ int modify_journal(char* journal_name, char* modified_pages, size_t modified_pag
 
 void disconnect_client() {
     size_t request_message_size;
-    char* request_message = get_message(DISCONNECT_CLIENT, (char*)NULL, 0, &request_message_size);
+    char* request_message = get_request_message(DISCONNECT_CLIENT, (char*)NULL, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     close(socket_fd);

@@ -17,13 +17,11 @@
 #include <fcntl.h>
 #include <time.h>
 #include <dirent.h> 
-#include <sys/select.h>
 
 
 command_result* get_command_result(operation_status status, char* status_message, char* additional_data, size_t additional_data_size) {
     command_result* result = calloc(1, sizeof(command_result));
     result->status = status;
-    result->status_message = (char*)malloc(strlen(status_message) + 1);
     strcpy(result->status_message, status_message);
 
     if(additional_data) {

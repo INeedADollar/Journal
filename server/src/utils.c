@@ -68,7 +68,7 @@ operation_status send_command_result_message(user_id id, command_result* result)
     char command_type[17];
 
     get_command_type_string(result->type, command_type);
-    sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%d\n", command_type, content_size, id);
+    sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\n", command_type, content_size, id);
 
     size_t message_size = strlen(header) + content_size + 8;
     char message[message_size];

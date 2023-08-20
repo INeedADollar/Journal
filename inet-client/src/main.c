@@ -1,12 +1,13 @@
 #include "interface.h"
 #include "requests.h"
+#include "logger.h"
 
 #include <signal.h>
 
 
 void stop_client(int signal) {
     log_info("Stopping client...");
-    STOP_CLIENT = 1;
+    STOP_CLIENT_FLAG = 1;
 }
 
 
