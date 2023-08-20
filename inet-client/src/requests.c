@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE 
+#endif // _GNU_SOURCE
 
 #include "requests.h"
 #include "logger.h"
@@ -11,18 +13,6 @@
 #include <string.h>
 #include <errno.h>
 
-
-typedef enum {
-    GENERATE_ID,
-    CREATE_JOURNAL,
-    RETRIEVE_JOURNAL,
-    RETRIEVE_JOURNALS,
-    IMPORT_JOURNAL,
-    MODIFY_JOURNAL,
-    DELETE_JOURNAL,
-    DISCONNECT_CLIENT,
-    INVALID_COMMAND
-} request_type;
 
 typedef struct {
     request_type type;
@@ -186,11 +176,11 @@ response* get_response() {
 
     content[content_length] = '\0';
 
-    response* resp = (response*)malloc(sizeof(response));
+    response* resp = (response*)calloc(1, sizeof(response));
     char* status = strstr(content, "status=<journal_response_value>");
     if(!status) {
         log_warning("Invalid content received: %s", content);
-        free(resp);
+        delete_response(resp);
         return NULL;
     }
 
@@ -198,7 +188,7 @@ response* get_response() {
     char* status_end_tag = strstr(status, "</journal_response_value>\n");
     if(!status_end_tag) {
         log_warning("Invalid content received: %s", content);
-        free(resp);
+        delete_response(resp);
         return NULL;
     }
 
@@ -215,7 +205,7 @@ response* get_response() {
     char* status_message = strstr(status_end_tag + 27, "status-message=<journal_response_value>");
     if(!status_message) {
         log_warning("Invalid content received: %s", content);
-        free(resp);
+        delete_response(resp);
         return NULL;
     }
 
@@ -223,7 +213,7 @@ response* get_response() {
     char* status_message_end_tag = strstr(status, "</journal_response_value>\n");
     if(!status_message_end_tag) {
         log_warning("Invalid content received: %s", content);
-        free(resp);
+        delete_response(resp);
         return NULL;
     }
 
@@ -272,9 +262,7 @@ void get_user_id() {
 
     resp->data[resp->data_size] = '\0';
     id = strtoul(resp->data, (char**)NULL, 10);
-    free(resp->status_message);
-    free(resp->data);
-    free(resp);
+    delete_response(resp);
 
     if(user_id == 0 || errno == ERANGE) {
         log_error("Could not register client with the server.");
@@ -284,7 +272,7 @@ void get_user_id() {
 }
 
 
-void init_requests(char* server_address, int port, notification_callback callback) {
+void init_requests(char* server_address, int port) {
     int new_socket_fd;
 	struct sockaddr_in server_addr;
 	struct hostent* he;
@@ -305,8 +293,12 @@ void init_requests(char* server_address, int port, notification_callback callbac
 	}
 	
     socket_fd = new_socket_fd;
-    nottif_callback = callback;
     get_user_id();
+}
+
+
+void register_notifications_callback(notification_callback callback) {
+    nottif_callback = callback;
 }
 
 
@@ -317,6 +309,19 @@ response* create_journal(char* journal_name) {
 
     size_t request_message_size;
     char* request_message = get_message(CREATE_JOURNAL, content, 0, &request_message_size);
+    send_request(request_message, request_message_size);
+
+    return get_response();
+}
+
+
+response* retrieve_journal(char* journal_name) {
+    size_t journal_name_size = strlen(journal_name);
+    char content[journal_name_size + 14];
+    sprintf(content, "journal-name=%s\n", journal_name);
+
+    size_t request_message_size;
+    char* request_message = get_message(RETRIEVE_JOURNAL, content, 0, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -367,7 +372,7 @@ void async_operation_thread(async_notif_thread_args* args) {
 
     response* response = get_response();
     if(response) {
-        nottif_callback(response);
+        nottif_callback(response, args->type);
     }
 
     free(args->journal_name);
@@ -376,27 +381,6 @@ void async_operation_thread(async_notif_thread_args* args) {
         free(args->data);
     }
     free(args);
-}
-
-
-int retrieve_journal(char* journal_name) {
-    async_notif_thread_args* args = (async_notif_thread_args*)malloc(sizeof(async_notif_thread_args));
-    args->journal_name = (char*)malloc(strlen(journal_name));
-    args->content_key = (char*)NULL;
-    args->data = (char*)NULL;
-    args->data_size = 0;
-    args->type = RETRIEVE_JOURNAL;
-
-    strcpy(args->journal_name, journal_name);
-
-    pthread_t thread;
-    int res = pthread_create(&thread, (pthread_attr_t*)NULL, (void * (*)(void *))async_operation_thread, (void*)args);
-    if(res != 0) {
-        log_error("Could not create retrieve journal thread. Error: %s", strerror(errno));
-        return -1;
-    }
-
-    return 0;
 }
 
 
@@ -451,4 +435,17 @@ void disconnect_client() {
     send_request(request_message, request_message_size);
 
     close(socket_fd);
+}
+
+
+void delete_response(response* resp) {
+    if(resp->status_message) {
+        free(resp->status_message);
+    }
+
+    if(resp->data) {
+        free(resp->data);
+    }
+
+    free(resp);
 }

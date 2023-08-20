@@ -25,7 +25,7 @@ operation_status enqueue_message(message_t* message) {
 message_t* dequeue_message() {
     if(queue->length > 0) {
         message_t* message = queue->messages[0];
-        memmove((void*)queue->messages, (void*)(queue->messages + 1), queue->length - 2);
+        memmove((void*)queue->messages, (void*)(queue->messages + 1), (queue->length - 2) * sizeof(message_t*));
         queue->length--;
 
         return message;

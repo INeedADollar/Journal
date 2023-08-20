@@ -1,6 +1,5 @@
 from ui_generated.ui_journal_window import Ui_journalWindow
 from PyQt5.QtWidgets import QWidget, QStatusBar, QMessageBox
-from enums import CommandTypes, OperationStatus
 
 import zipfile
 import io
