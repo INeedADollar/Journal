@@ -78,8 +78,8 @@ operation_status accept_new_client(fd_set* active_set, int server_socket_fd) {
 	return OPERATION_SUCCESS;
 }
 
-// Remove client from fd_set when disconnected
-operation_status read_message_part(int socket_fd, char* buffer, size_t* current_size, size_t message_size) {
+
+operation_status read_message_part(int socket_fd, char* buffer, size_t* current_size, size_t message_size, fd_set* active_set) {
     char part[1024];
 	size_t size_to_read_with_header = message_size - *current_size < 1024 ? message_size - *current_size : 1024;
     size_t size_to_read = message_size == 0 ? 100 : size_to_read_with_header;
@@ -87,7 +87,7 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 
 	if(received == OPERATION_FAIL) {
 		log_error("Could not read from client %d.", socket_fd);
-		disconnect_client(0, socket_fd);
+		disconnect_client(0, socket_fd, active_set);
 		return OPERATION_FAIL;
 	}
 
@@ -102,7 +102,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 	char read_message[1024];
 
 	if(!clients_data[client_socket_fd].header) {
-		read_message_part(client_socket_fd, read_message, &received_len, 0);
+		read_message_part(client_socket_fd, read_message, &received_len, 0, active_set);
 		read_message[received_len] = '\0';
 		
 		header = parse_header(read_message);
@@ -140,7 +140,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		return enqueue_message(message);
 	}
 
-	read_message_part(client_socket_fd, read_message, &received_len, header->length);
+	read_message_part(client_socket_fd, read_message, &received_len, header->length, active_set);
 	if(!clients_data[client_socket_fd].header) {
 		read_message[received_len] = '\0';
 		message_t* message = parse_message(client_socket_fd, read_message);
@@ -151,7 +151,7 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 
 		user_id id = header->client_id;
 		free(header);
-		command_result* result = check_message_and_run_command(message);
+		command_result* result = check_message_and_run_command(message, active_set);
 		if(!result) {
 			return OPERATION_SUCCESS;
 		}

@@ -17,12 +17,13 @@
 #include <fcntl.h>
 #include <time.h>
 #include <dirent.h> 
+#include <sys/select.h>
 
 
 command_result* get_command_result(operation_status status, char* status_message, char* additional_data, size_t additional_data_size) {
     command_result* result = calloc(1, sizeof(command_result));
     result->status = status;
-
+    result->status_message = (char*)malloc(strlen(status_message) + 1);
     strcpy(result->status_message, status_message);
 
     if(additional_data) {
@@ -44,7 +45,8 @@ command_result* check_journal_name(message_content_node_data* journal_name, user
     return NULL;
 }
 
-command_result* check_message_and_run_command(message_t* message) {
+
+command_result* check_message_and_run_command(message_t* message, fd_set* active_set) {
     command_result* result = NULL;
     message_content_node_data* journal_name = extract_value_from_content(message->content, "journal-name");
     operation_status op_status;
@@ -117,7 +119,7 @@ command_result* check_message_and_run_command(message_t* message) {
         }
         break;
     case DISCONNECT_CLIENT:
-        disconnect_client(message->header->client_id, message->id / 1000);
+        disconnect_client(message->header->client_id, message->id / 1000, active_set);
     case INVALID_COMMAND:
         result = get_command_result(OPERATION_FAIL, "Command type could not be determined.", NULL, 0);
     default:
@@ -244,7 +246,7 @@ command_result* retrieve_journals(user_id id) {
 
     DIR* user_directory = opendir(user_directory_path);
     size_t journals_size = 100, current_journals_size = 0;
-    char* journals = (char*)malloc(journals_size);
+    char* journals = (char*)calloc(1, journals_size);
 
     if(user_directory) {
         while ((journal = readdir(user_directory)) != NULL) {
@@ -252,13 +254,17 @@ command_result* retrieve_journals(user_id id) {
                 continue;
             }
 
-            current_journals_size += strlen(journal->d_name) + 30;
+            size_t journal_name_size = strlen(journal->d_name);
+            char journal_name[journal_name_size];
+            strncpy(journal_name, journal->d_name, journal_name_size - 4);
+
+            current_journals_size += journal_name_size + 1;
             if(current_journals_size > journals_size) {
                 journals_size *= 2;
                 journals = (char*)realloc((void*)journals, journals_size);
             }
 
-            sprintf(journals, "<journal_name>%s</journal_name>", journal->d_name);
+            sprintf(journals + current_journals_size - journal_name_size - 1, "%s;", journal_name);
         }
 
         closedir(user_directory);
@@ -383,7 +389,8 @@ command_result* delete_journal(user_id id, char* journal_name) {
 }
 
 
-operation_status disconnect_client(user_id id, int client_fd) {
+operation_status disconnect_client(user_id id, int client_fd, fd_set* active_set) {
     log_info("Client with id %lu and socket id %d has disconnected!\n", id, client_fd);
+    FD_CLR(client_fd, active_set);
     return (operation_status)close(client_fd);
 }

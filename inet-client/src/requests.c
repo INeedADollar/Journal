@@ -251,23 +251,46 @@ response* get_response() {
 
 
 void get_user_id() {
-    size_t request_message_size;
-    char* request_message = get_message(GENERATE_ID, (char*)NULL, 0, &request_message_size);
-    send_request(request_message, request_message_size);
-
-    response* resp = get_response();
-    if(!resp) {
-        exit(-1);
+    FILE* id_file = fopen("./id.user", "r");
+    if(id_file) {
+        char id_str[15];
+        fgets(id_str, 15, id_file);
+        id = strtoul(resp->data, (char**)NULL, 10);
     }
+    else {
+        size_t request_message_size;
+        char* request_message = get_message(GENERATE_ID, (char*)NULL, 0, &request_message_size);
+        send_request(request_message, request_message_size);
 
-    resp->data[resp->data_size] = '\0';
-    id = strtoul(resp->data, (char**)NULL, 10);
-    delete_response(resp);
+        response* resp = get_response();
+        if(!resp) {
+            log_error("Could not register client with the server. Invalid response received.");
+            exit(-1);
+        }
 
-    if(user_id == 0 || errno == ERANGE) {
+        resp->data[resp->data_size] = '\0';
+        id = strtoul(resp->data, (char**)NULL, 10);
+        delete_response(resp);
+    }
+    
+    if(id == 0 || errno == ERANGE) {
         log_error("Could not register client with the server.");
         disconnect_client();
         exit(-1);
+    }
+
+    if(!id_file) {
+        id_file = fopen("./id.user", "w+");
+        if(!id_file) {
+            log_warning("Could not save user id.")
+            return;
+        }
+
+        fprintf(id_file, "%lu", id);
+        fclose(id_file);
+    }
+    else {
+        fclose(id_file);
     }
 }
 

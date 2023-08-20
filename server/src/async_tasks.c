@@ -21,10 +21,11 @@ void retrieve_journal_task(retrieve_journal_args* args) {
     free(args);
 }
 
+
 operation_status create_retrieve_journal_task(user_id id, char* journal_name) {
     retrieve_journal_args* args = (retrieve_journal_args*)malloc(sizeof(retrieve_journal_args));
     args->id = id;
-    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->journal_name = (char*)malloc(strlen(journal_name) + 1);
     strcpy(args->journal_name, journal_name);
 
     return (operation_status)thpool_add_work(async_tasks_pool, (void*)retrieve_journal_task, (void*)args);
@@ -45,7 +46,7 @@ operation_status create_import_journal_task(user_id id, char* journal_name, char
     args->id = id;
     args->journal_content_size = journal_data_size;
 
-    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->journal_name = (char*)malloc(strlen(journal_name) + 1);
     strcpy(args->journal_name, journal_name);
 
     args->journal_content = (char*)malloc(journal_data_size);
@@ -69,7 +70,7 @@ operation_status create_modify_journal_task(user_id id, char* journal_name, char
     args->id = id;
     args->new_content_size = new_content_size;
 
-    args->journal_name = (char*)malloc(strlen(journal_name));
+    args->journal_name = (char*)malloc(strlen(journal_name) + 1);
     strcpy(args->journal_name, journal_name);
 
     args->new_content = (char*)malloc(new_content_size);
@@ -82,6 +83,7 @@ operation_status create_modify_journal_task(user_id id, char* journal_name, char
 int tasks_running_count() {
     return thpool_num_threads_working(async_tasks_pool);
 }
+
 
 void destroy_thread_pool() {
     thpool_destroy(async_tasks_pool);

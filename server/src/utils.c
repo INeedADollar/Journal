@@ -40,11 +40,11 @@ void get_command_type_string(command_types type, char* buffer) {
     }
 }
 
-// Change tags to coresponding tags and change message_length to content_length
+
 operation_status send_command_result_message(user_id id, command_result* result) { 
     size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
-    size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 52;
-    char content[content_size];
+    size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 190;
+    char content[content_size + 8];
     char status[18];
 
     if(result->type == OPERATION_SUCCESS) {
@@ -54,33 +54,27 @@ operation_status send_command_result_message(user_id id, command_result* result)
         strcpy(status, "OPERATION_FAIL");
     }
 
-    sprintf(content, "Content\nstatus=%s\nstatus-message=%s\n", status, result->status_message); 
+    sprintf(content, "Content\nstatus=<journal_response_value>%s</journal_response_value>\nstatus-message=<journal_response_value>%s</journal_response_value>\n", status, result->status_message); 
 
     if(result->additional_data) {
-        char* content_end = content + (content_size - result->additional_data_size - 18);
-        sprintf(content_end, "additional-data=%s\n", result->additional_data);
+        char* content_end = content + (content_size - result->additional_data_size - 67);
+        sprintf(content_end, "additional-data=<journal_response_value>%s</journal_response_value>\n", result->additional_data);
     }
     else {
-        content_size -= 18;
+        content_size -= 67;
     }
 
-    char header[100];
+    char header[110];
     char command_type[17];
 
     get_command_type_string(result->type, command_type);
-    sprintf(header, "Header\ncommand-type<::::>%s\nuser-id<::::>%lu\n", command_type, id);
+    sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%d\n", command_type, content_size, id);
 
-    size_t header_len = strlen(header);
-    size_t message_length = header_len + content_size + 22;
-    char message_length_str[15];
-    snprintf(message_length_str, 15, "%zu", message_length);
-    message_length += strlen(message_length_str);
-    
-    sprintf(header + header_len, "message-length<::::>%s\n", message_length_str);
-    char message[message_length];
+    size_t message_size = strlen(header) + content_size + 8;
+    char message[message_size];
     sprintf(message, "%s%s", header, content);
 
-    ssize_t send_result = send(id / 1000, message, message_length, 0);
+    ssize_t send_result = send(id / 1000, message, message_size, 0);
     if(send_result == OPERATION_FAIL) {
         log_error("Failed to send actual response to client with id %lu", id);
         return OPERATION_FAIL;

@@ -35,7 +35,7 @@ static int STOP_SERVER = 0;
 
 typedef long int message_id;
 typedef unsigned long user_id;
-typedef int message_length;
+typedef size_t message_length;
 
 typedef struct {
     command_types type;

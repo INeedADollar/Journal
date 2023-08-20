@@ -99,6 +99,13 @@ class JournalWindow(QWidget):
         self.requester.modify_journal(self.journal_name, journal_zip_buffer.getvalue())
 
     def __add_new_pages(self):
+        if len(self.journal_pages) % 2 == 1:
+            self.journal_pages.append({
+                "content": "",
+                "modified": False
+            })
+            return
+        
         for i in range(2):
             self.journal_pages.append({
                 "content": "",
