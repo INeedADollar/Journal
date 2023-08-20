@@ -235,13 +235,14 @@ void show_journal_screen(size_t journal_nr) {
         return;
     }
 
+    delete_response(resp);
     time_t last_modified = file_stat.st_mtime;
 
     system("clear");
     printf("Opening %s\n...", journals[journal_nr]);
 
     char command[150];
-    sprintf(command, "/usr/bin/python3 ./journal_editor/editor.py --journal=%s", journal_path);
+    sprintf(command, "/usr/bin/python3 ./journal_editor/editor.py --journal %s", journal_path);
     FILE* editor_output = popen(command, "r");
     if(!editor_output) {
         puts("Could not open journal editor. Returning to main menu...");
@@ -251,6 +252,12 @@ void show_journal_screen(size_t journal_nr) {
 
     char exit_command[10];
     fgets(exit_command, 10, editor_output);
+    if(strcmp(exit_command, "Exit\n") != 0) {
+        puts("Something bad happened while trying to open journal editor. Returning to main menu...\n");
+        sleep(1000);
+        return;
+    }
+
     int res = pclose(command_output);
     if(res < 0) {
         log_error("Could not close journal editor output file. Error: %s", strerror(errno));
@@ -267,14 +274,26 @@ void show_journal_screen(size_t journal_nr) {
         return;
     }
 
-    res = modify_journal(journals[journal_nr], zip_content, zip_content_size);
-    if(res == -1) {
-        free(zip_content);
+    struct stat new_file_stat;
+    if (stat(journal_path, &new_file_stat) == -1) {
+        log_error("Something bad happened. Returning to main menu...");
         sleep(1000);
+        return;
     }
 
-    journal_saved = (char*)malloc(strlen(journal_name + 1));
-    strcpy(journal_saved, journal_name);
+    if(last_modified != new_file_stat.st_mtime) {
+        res = modify_journal(journals[journal_nr], zip_content, zip_content_size);
+        if(res == -1) {
+            free(zip_content);
+            sleep(1000);
+        }
+
+        journal_saved = (char*)malloc(strlen(journal_name + 1));
+        strcpy(journal_saved, journal_name);
+    }
+
+    puts("Returning to main menu...");
+    sleep(1000);
 }
 
 
