@@ -68,19 +68,22 @@ typedef struct {
 
 
 typedef struct {
-    user_id id;
+    user_id usr_id;
+    message_id message_id;
     char* journal_name;
 } retrieve_journal_args;
 
 typedef struct {
-    user_id id;
+    user_id usr_id;
+    message_id message_id;
     size_t journal_content_size;
     char* journal_name;
     char* journal_content; 
 } import_journal_args;
 
 typedef struct {
-    user_id id;
+    user_id usr_id;
+    message_id message_id;
     size_t new_content_size;
     char* journal_name;
     char* new_content;

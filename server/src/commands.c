@@ -45,6 +45,8 @@ command_result* check_journal_name(message_content_node_data* journal_name, user
 
 
 command_result* check_message_and_run_command(message_t* message, fd_set* active_set) {
+    log_debug("Entering check_message_and_run_command()...");
+
     command_result* result = NULL;
     message_content_node_data* journal_name = extract_value_from_content(message->content, "journal-name");
     operation_status op_status;
@@ -63,7 +65,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
     case RETRIEVE_JOURNAL:
         result = check_journal_name(journal_name, message->header->client_id);
         if(!result) {
-            op_status = create_retrieve_journal_task(message->header->client_id, journal_name->value);
+            op_status = create_retrieve_journal_task(message->header->client_id, message->id, journal_name->value);
             if(op_status == OPERATION_FAIL) {
                 log_error("Could not create retrieve journal task for client %lu.", message->header->client_id);
                 result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
@@ -85,7 +87,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
             break;
         }
         
-        op_status = create_import_journal_task(message->header->client_id, journal_name->value, journal_data->value, journal_data->size);
+        op_status = create_import_journal_task(message->header->client_id, message->id, journal_name->value, journal_data->value, journal_data->size);
         if(op_status == OPERATION_FAIL) {
             log_error("Could not create import journal task for client %lu.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
@@ -104,7 +106,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
             break;
         }
         
-        op_status = create_modify_journal_task(message->header->client_id, journal_name->value, new_content->value, new_content->size);
+        op_status = create_modify_journal_task(message->header->client_id, message->id, journal_name->value, new_content->value, new_content->size);
         if(op_status == OPERATION_FAIL) {
             log_error("Could not create modify journal task for client %lu.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
@@ -125,6 +127,8 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
     }
 
     delete_message(message);
+    log_debug("Exiting check_message_and_run_command()");
+
     return result;
 }
 

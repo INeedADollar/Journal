@@ -7,13 +7,16 @@
 
 void stop_client(int signal) {
     log_info("Stopping client...");
+	close_log_file();
+	
     STOP_CLIENT_FLAG = 1;
 }
 
 
 int main(int argc, char * argv[]) {
 	signal(SIGINT, stop_client);
-	init_requests("", 5000);
+	initialize_log_file("client.log");
+	init_requests("127.0.0.2", 5000);
 	init_interface();
 
 	return 0;

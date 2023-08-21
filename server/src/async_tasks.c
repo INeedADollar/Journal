@@ -14,17 +14,18 @@ void init_thread_pool() {
 
 
 void retrieve_journal_task(retrieve_journal_args* args) {
-    command_result* result = retrieve_journal(args->id, args->journal_name);
-    send_command_result_message(args->id, result);
+    command_result* result = retrieve_journal(args->usr_id, args->journal_name);
+    send_command_result_message(args->message_id / 1000, args->usr_id, result);
 
     free(args->journal_name);
     free(args);
 }
 
 
-operation_status create_retrieve_journal_task(user_id id, char* journal_name) {
+operation_status create_retrieve_journal_task(user_id id, message_id msg_id, char* journal_name) {
     retrieve_journal_args* args = (retrieve_journal_args*)malloc(sizeof(retrieve_journal_args));
-    args->id = id;
+    args->usr_id = id;
+    args->message_id = msg_id;
     args->journal_name = (char*)malloc(strlen(journal_name) + 1);
     strcpy(args->journal_name, journal_name);
 
@@ -33,17 +34,18 @@ operation_status create_retrieve_journal_task(user_id id, char* journal_name) {
 
 
 void import_journal_task(import_journal_args* args) {
-    command_result* result = import_journal(args->id, args->journal_name, args->journal_content, args->journal_content_size);
-    send_command_result_message(args->id, result);
+    command_result* result = import_journal(args->usr_id, args->journal_name, args->journal_content, args->journal_content_size);
+    send_command_result_message(args->message_id / 1000, args->usr_id, result);
 
     free(args->journal_name);
     free(args->journal_content);
     free(args);
 }
 
-operation_status create_import_journal_task(user_id id, char* journal_name, char* journal_data, size_t journal_data_size) {
+operation_status create_import_journal_task(user_id id, message_id msg_id, char* journal_name, char* journal_data, size_t journal_data_size) {
     import_journal_args* args = (import_journal_args*)malloc(sizeof(import_journal_args));
-    args->id = id;
+    args->usr_id = id;
+    args->message_id = msg_id;
     args->journal_content_size = journal_data_size;
 
     args->journal_name = (char*)malloc(strlen(journal_name) + 1);
@@ -57,17 +59,18 @@ operation_status create_import_journal_task(user_id id, char* journal_name, char
 
 
 void modify_journal_task(modify_journal_args* args) {
-    command_result* result = modify_journal(args->id, args->journal_name, args->new_content, args->new_content_size);
-    send_command_result_message(args->id, result);
+    command_result* result = modify_journal(args->usr_id, args->journal_name, args->new_content, args->new_content_size);
+    send_command_result_message(args->message_id / 1000, args->usr_id, result);
 
     free(args->journal_name);
     free(args->new_content);
     free(args);
 }
 
-operation_status create_modify_journal_task(user_id id, char* journal_name, char* new_content, size_t new_content_size) {
+operation_status create_modify_journal_task(user_id id, message_id msg_id, char* journal_name, char* new_content, size_t new_content_size) {
     modify_journal_args* args = (modify_journal_args*)malloc(sizeof(modify_journal_args));
-    args->id = id;
+    args->usr_id = id;
+    args->message_id = msg_id;
     args->new_content_size = new_content_size;
 
     args->journal_name = (char*)malloc(strlen(journal_name) + 1);

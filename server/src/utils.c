@@ -41,7 +41,7 @@ void get_command_type_string(command_types type, char* buffer) {
 }
 
 
-operation_status send_command_result_message(user_id id, command_result* result) { 
+operation_status send_command_result_message(int client_fd, user_id id, command_result* result) { 
     size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
     size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 190;
     char content[content_size + 8];
@@ -74,9 +74,9 @@ operation_status send_command_result_message(user_id id, command_result* result)
     char message[message_size];
     sprintf(message, "%s%s", header, content);
 
-    ssize_t send_result = send(id / 1000, message, message_size, 0);
+    ssize_t send_result = send(client_fd, message, message_size, 0);
     if(send_result == OPERATION_FAIL) {
-        log_error("Failed to send actual response to client with id %lu", id);
+        log_error("Failed to send actual response to client with id %d", client_fd);
         return OPERATION_FAIL;
     }
 

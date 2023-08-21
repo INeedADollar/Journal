@@ -21,8 +21,8 @@
 
 
 typedef struct {
-	size_t buffered_message_size;
-	char* buffered_message;
+	size_t buffered_content_size;
+	char* buffered_content;
 	message_header* header;
 } client_data;
 
@@ -73,36 +73,42 @@ operation_status accept_new_client(fd_set* active_set, int server_socket_fd) {
 		return OPERATION_FAIL;
 	}
 	
-	log_info("Client %d connected.\n", client_socket_fd);
+	log_info("Client %d connected on inet.\n", client_socket_fd);
     FD_SET(client_socket_fd, active_set);
 	return OPERATION_SUCCESS;
 }
 
 
-operation_status read_message_part(int socket_fd, char* buffer, size_t* current_size, size_t message_size, fd_set* active_set) {
-    char part[1024];
-	size_t size_to_read_with_header = message_size - *current_size < 1024 ? message_size - *current_size : 1024;
-    size_t size_to_read = message_size == 0 ? 110 : size_to_read_with_header;
+operation_status read_message_part(int socket_fd, char* buffer, size_t* current_size, size_t content_size, fd_set* active_set) {
+	log_debug("Entering read_message_part()");
+
+	char part[1024];
+	size_t content_size_to_read = *current_size + 1024 > content_size ? content_size - *current_size : 1024;
+    size_t size_to_read = content_size == -1 ? 110 : content_size_to_read;
 	ssize_t received = recv(socket_fd, &part, size_to_read, 0);
 
 	if(received == OPERATION_FAIL) {
 		log_error("Could not read from client %d.", socket_fd);
 		disconnect_client(0, socket_fd, active_set);
+		log_debug("Exiting read_message_part()");
+
 		return OPERATION_FAIL;
 	}
 
-    strcat(buffer, part);
+    memcpy(buffer + *current_size, part, received);
 	*current_size += received;
+	log_debug("Exiting read_message_part()");
+
 	return OPERATION_SUCCESS;
 }
 
-operation_status handle_client_command(fd_set* active_set, int client_socket_fd) {
+operation_status read_and_handle_client_command(fd_set* active_set, int client_socket_fd) {
 	message_header* header = NULL;
 	size_t received_len = 0;
 	char read_message[1024];
 
 	if(!clients_data[client_socket_fd].header) {
-		read_message_part(client_socket_fd, read_message, &received_len, 0, active_set);
+		read_message_part(client_socket_fd, read_message, &received_len, -1, active_set);
 		read_message[received_len] = '\0';
 		
 		header = parse_header(read_message);
@@ -112,25 +118,44 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		}
 
 		if(header->type == RETRIEVE_JOURNAL || header->type == IMPORT_JOURNAL || header->type == MODIFY_JOURNAL) {
+			char* content_start = strstr(read_message, "Content\n");
+			if(!content_start) {
+				message_t message;
+				message.id = client_socket_fd * 1000;
+				message.header = header;
+				message.content = NULL;
+				header->type = INVALID_COMMAND;
+
+				command_result* result = check_message_and_run_command(&message, active_set);
+				if(!result) {
+					return OPERATION_SUCCESS;
+				}
+
+				user_id id = header->client_id;
+				free(header);
+				return send_command_result_message(client_socket_fd, id, result);
+			}
+
 			clients_data[client_socket_fd].header = header;
-			clients_data[client_socket_fd].buffered_message_size = received_len;
-			clients_data[client_socket_fd].buffered_message = (char*)malloc(header->length);
-			strcpy(clients_data[client_socket_fd].buffered_message, read_message);
+			clients_data[client_socket_fd].buffered_content_size = strlen(content_start + 9);
+			clients_data[client_socket_fd].buffered_content = (char*)malloc(header->length);
+
+			strcpy(clients_data[client_socket_fd].buffered_content, content_start + 9);
 		}
 	}
-    else if(clients_data[client_socket_fd].buffered_message_size == clients_data[client_socket_fd].header->length) {
-		size_t current_size = clients_data[client_socket_fd].buffered_message_size;
-		clients_data[client_socket_fd].buffered_message[current_size] = '\0';
-		message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_message);
+    else if(clients_data[client_socket_fd].buffered_content_size == clients_data[client_socket_fd].header->length) {
+		size_t current_size = clients_data[client_socket_fd].buffered_content_size;
+		clients_data[client_socket_fd].buffered_content[current_size] = '\0';
+		message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_content);
 
-		char message_copy[clients_data[client_socket_fd].buffered_message_size];
-		strcpy(message_copy, clients_data[client_socket_fd].buffered_message);
+		char message_copy[clients_data[client_socket_fd].buffered_content_size];
+		memcpy(message_copy, clients_data[client_socket_fd].buffered_content, current_size);
 
 		free(clients_data[client_socket_fd].header);
 		clients_data[client_socket_fd].header = NULL;
 		
-		free(clients_data[client_socket_fd].buffered_message);
-		clients_data[client_socket_fd].buffered_message_size = 0;
+		free(clients_data[client_socket_fd].buffered_content);
+		clients_data[client_socket_fd].buffered_content_size = 0;
 
 		if(!message) {
 			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", message_copy, header->client_id, client_socket_fd);
@@ -140,7 +165,12 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 		return enqueue_message(message);
 	}
 
-	read_message_part(client_socket_fd, read_message, &received_len, header->length, active_set);
+	if(header->length > 0) {
+		char* read_message_pos = read_message + received_len;
+		received_len = 0;
+		read_message_part(client_socket_fd, read_message_pos, &received_len, header->length, active_set);
+	}
+
 	if(!clients_data[client_socket_fd].header) {
 		read_message[received_len] = '\0';
 		message_t* message = parse_message(client_socket_fd, read_message);
@@ -149,14 +179,15 @@ operation_status handle_client_command(fd_set* active_set, int client_socket_fd)
 			return OPERATION_FAIL;
 		}
 
-		user_id id = header->client_id;
 		free(header);
+		message_id id = message->id;
+		user_id usr_id = message->header->client_id;
 		command_result* result = check_message_and_run_command(message, active_set);
 		if(!result) {
 			return OPERATION_SUCCESS;
 		}
 
-		return send_command_result_message(id, result);
+		return send_command_result_message(id / 1000, usr_id, result);
 	}
 
 	return OPERATION_SUCCESS;
@@ -191,15 +222,15 @@ void inet_thread(void* args) {
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if(FD_ISSET(fd, &read_sockets_set)) {
                 if(fd == server_socket_fd) {
-					log_debug("Entering accept_new_client...");
+					log_debug("Entering accept_new_client()");
                     accept_new_client(&active_sockets_set, server_socket_fd);
-					log_debug("Exiting accept_new_client...");
+					log_debug("Exiting accept_new_client()");
 
                 }
                 else {
-					log_debug("Entering handle_client_command...");
-                    handle_client_command(&active_sockets_set, fd);
-					log_debug("Exiting handle_client_command...");
+					log_debug("Entering handle_client_command()");
+                    read_and_handle_client_command(&active_sockets_set, fd);
+					log_debug("Exiting handle_client_command()");
                 }
             }
 		}
