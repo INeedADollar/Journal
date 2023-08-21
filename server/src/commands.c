@@ -48,9 +48,22 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
     log_debug("Entering check_message_and_run_command()...");
 
     command_result* result = NULL;
+    if(message->content) {
+        message_content_node* node = message->content->head;
+        while(node) {
+            log_info("%s = %s", node->key, node->node_data->value);
+            node = node->next;
+            log_info("%d", (int)(node == NULL));
+        }
+    }
+    else {
+        log_info("NO CONTENT");
+    }
+
     message_content_node_data* journal_name = extract_value_from_content(message->content, "journal-name");
     operation_status op_status;
 
+    log_info("HERE");
     switch (message->header->type)
     {
     case GENERATE_ID:
@@ -74,6 +87,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
         break;
     case RETRIEVE_JOURNALS:
         result = retrieve_journals(message->header->client_id);
+        break;
     case IMPORT_JOURNAL:
         result = check_journal_name(journal_name, message->header->client_id);
         if(result) {
@@ -120,8 +134,10 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
         break;
     case DISCONNECT_CLIENT:
         disconnect_client(message->header->client_id, message->id / 1000, active_set);
+        break;
     case INVALID_COMMAND:
         result = get_command_result(OPERATION_FAIL, "Command type could not be determined.", NULL, 0);
+        break;
     default:
         break;
     }
@@ -141,7 +157,7 @@ command_result* generate_id(int client_fd) {
     sprintf(id_string, "%lu", generated_id);
 
     log_debug("Generated id %lu for client socket %d", generated_id, client_fd);
-    return get_command_result(OPERATION_SUCCESS, "Id succesfully generated.", id_string, 30);
+    return get_command_result(OPERATION_SUCCESS, "Id succesfully generated.", id_string, strlen(id_string));
 }
 
 
@@ -189,6 +205,7 @@ command_result* prepare_journal_creation(user_id id) {
 }
 
 command_result* create_journal(user_id id, char* journal_name) {
+    log_debug("Entering create_journal()");
     command_result* result = prepare_journal_creation(id);
     if(result) {
         return result;
@@ -200,6 +217,7 @@ command_result* create_journal(user_id id, char* journal_name) {
         "2.txt"
     };
 
+    log_info(journal_name);
     sprintf(journal_path, "./journals/%lu/%s.zip", id, journal_name);
     operation_status status = (operation_status)zip_create(journal_path, (const char**)zip_files, 1);
     if(status == OPERATION_FAIL) {
@@ -256,9 +274,10 @@ command_result* retrieve_journals(user_id id) {
                 continue;
             }
 
-            size_t journal_name_size = strlen(journal->d_name);
+            size_t journal_name_size = strlen(journal->d_name) - 4;
             char journal_name[journal_name_size];
-            strncpy(journal_name, journal->d_name, journal_name_size - 4);
+            strncpy(journal_name, journal->d_name, journal_name_size);
+            journal_name[journal_name_size] = '\0';
 
             current_journals_size += journal_name_size + 1;
             if(current_journals_size > journals_size) {
@@ -266,20 +285,28 @@ command_result* retrieve_journals(user_id id) {
                 journals = (char*)realloc((void*)journals, journals_size);
             }
 
-            sprintf(journals + current_journals_size - journal_name_size - 1, "%s;", journal_name);
+            char* destination;
+            if(current_journals_size == journal_name_size + 1) {
+                destination = journals;
+            }
+            else {
+                destination = journals + current_journals_size - 1;
+            }
+
+            sprintf(destination, "%s;", journal_name);
         }
 
         closedir(user_directory);
     }
 
     if(strcmp(journals, "") == 0) {
-        return get_command_result(OPERATION_FAIL, "No journals found.", NULL, 0);
+        return get_command_result(OPERATION_SUCCESS, "No journals found.", NULL, 0);
     }
 
     return get_command_result(OPERATION_SUCCESS, "Journals retrieved succesfully.", journals, current_journals_size);
 }
 
-// Add a page if pages number is odd
+
 command_result* import_journal(user_id id, char* journal_name, char* journal_data, size_t journal_data_size) {
     command_result* result = prepare_journal_creation(id);
     if(result) {

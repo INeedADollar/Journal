@@ -15,8 +15,8 @@
 #include <sys/types.h>
 
 
-static char** journals;
-static size_t journals_count;
+static char** journals = NULL;
+static size_t journals_count = 0;
 
 static char* journal_imported = NULL;
 static char* journal_saved = NULL;
@@ -43,13 +43,15 @@ void notif_callback(response* resp, request_type type) {
 
 
 void print_controls() {
-    printf("\nc i [journal_nr]s [journal_nr]d [journal_nr]e\n");
-    printf("c - create journal\ni - import journal\ns - show journal\nd - delete journal\ne - exit");
+    printf("\nc - create journal\ni - import journal\ns - show journal\nd - delete journal\ne - exit");
+    printf("\nc i [journal_nr]s [journal_nr]d [journal_nr]e\n");    
 }
 
 
 void print_menu() {
+    log_info("HRERE print");
     system("clear");
+    printf("Journals\n");
     for(size_t i = 0; i < journals_count; i++) {
         printf("%zu. %s", journals_count + 1, journals[i]);
     }
@@ -77,6 +79,7 @@ void show_create_journal_screen() {
     response* resp = create_journal(journal_name);
     free(journal_name);
 
+    log_info("HWEEW RESPONSE");
     if(!resp) {
         sleep(1000);
         return;
@@ -333,15 +336,20 @@ void get_and_handle_choice() {
 
     int journal_nr = -1;
     char choice;
-    int res = sscanf(choice_str, "%d%c\n", &journal_nr, &choice);
+    int res = sscanf(choice_str, "%c\n", &choice);
     free(choice_str);
 
+    if(res < 1) {
+        int res = sscanf(choice_str, "%d%c\n", &journal_nr, &choice);
+    }
+
     if(res < 1 || res == EOF) {
-        puts("Invalid command. Try again.\n");
+        puts("Invalid command. Try again. \n");
         sleep(1000);
         return;
     }
 
+    log_info("Chosen command: %c", choice);
     if(journal_nr == -1 && (choice == 's' || choice == 'd' || choice == 'e')) {
         puts("Invalid command. Try again.\n");
         sleep(1000);
@@ -368,11 +376,13 @@ void get_and_handle_choice() {
         puts("Invalid command. Try again.\n");
         break;
     }
+
+    log_info("FINal handle");
 }
 
 
 void start_event_loop() {
-    while(STOP_CLIENT_FLAG) {
+    while(!STOP_CLIENT_FLAG) {
         get_and_handle_choice();
         print_menu();
     }
@@ -384,19 +394,23 @@ void init_interface() {
 
     log_info("Fetching journals. Please wait...");
     response* resp = retrieve_journals();
+    log_info("%s sad", resp->data);
 
     if(!resp || resp->status == FAIL || !resp->data) {
         log_info("There are no journals found. Create or import one.");
     }
     else {
-        resp->data[resp->data_size] = '\0';
+        printf("Journals\n");
+
         char** journals = (char**)malloc(100);
         char* p = strtok(resp->data, ";");
-        while(!p) {
-            journals[0] = (char*)malloc(strlen(p) + 1);
-            strcpy(journals[0], p);
+        while(p) {
+            journals[journals_count] = (char*)malloc(strlen(p) + 1);
+            strcpy(journals[journals_count], p);
             journals_count++;
-            printf("%zu. %s", journals_count, p);
+            
+            printf("%zu. %s\n", journals_count, p);
+            p = strtok(NULL, ";");
         }
     }
 

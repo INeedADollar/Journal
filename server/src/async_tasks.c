@@ -15,7 +15,7 @@ void init_thread_pool() {
 
 void retrieve_journal_task(retrieve_journal_args* args) {
     command_result* result = retrieve_journal(args->usr_id, args->journal_name);
-    send_command_result_message(args->message_id / 1000, args->usr_id, result);
+    send_command_result_message(args->message_id / 1000, RETRIEVE_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args);
@@ -35,7 +35,7 @@ operation_status create_retrieve_journal_task(user_id id, message_id msg_id, cha
 
 void import_journal_task(import_journal_args* args) {
     command_result* result = import_journal(args->usr_id, args->journal_name, args->journal_content, args->journal_content_size);
-    send_command_result_message(args->message_id / 1000, args->usr_id, result);
+    send_command_result_message(args->message_id / 1000, IMPORT_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args->journal_content);
@@ -60,7 +60,7 @@ operation_status create_import_journal_task(user_id id, message_id msg_id, char*
 
 void modify_journal_task(modify_journal_args* args) {
     command_result* result = modify_journal(args->usr_id, args->journal_name, args->new_content, args->new_content_size);
-    send_command_result_message(args->message_id / 1000, args->usr_id, result);
+    send_command_result_message(args->message_id / 1000, MODIFY_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args->new_content);

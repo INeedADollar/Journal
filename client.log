@@ -1,0 +1,42 @@
+2023-08-22 01:21:33 INFO: Fetching journals. Please wait...
+2023-08-22 01:21:33 INFO: Header
+command-type<::::>RETRIEVE_JOURNALS
+content-length<::::>0
+user-id<::::>692643178
+Content
+
+2023-08-22 01:21:33 INFO: Header
+command-type<::::>RETRIEVE_JOURNALS
+content-length<::::>311
+user-id<::::>692643178
+Content
+2023-08-22 01:21:33 INFO: 12
+2023-08-22 01:21:33 INFO: status=<jour
+2023-08-22 01:21:33 INFO: 311 311
+2023-08-22 01:21:33 INFO: OPERATION_SUCCESS</journal_response_value>
+status-message=<journal_response_value>Journals retrieved succesfully.</journal_response_value>
+additional-data=<journal_response_value>Fifth Journal;
+2023-08-22 01:21:33 INFO: (null) sad
+2023-08-22 01:21:33 INFO: There are no journals found. Create or import one.
+2023-08-22 01:21:35 INFO: Chosen command: c
+2023-08-22 01:21:36 INFO: Header
+command-type<::::>CREATE_JOURNAL
+content-length<::::>69
+user-id<::::>692643178
+Content
+journal-name=<journal_request_value>sagsdg
+</journal_request_value>
+
+2023-08-22 01:21:36 INFO: Header
+command-type<::::>CREATE_JOURNAL
+content-length<::::>169
+user-id<::::>692643178
+Content
+2023-08-22 01:21:36 INFO: 15
+2023-08-22 01:21:36 INFO: status=<journal
+2023-08-22 01:21:36 INFO: 169 169
+2023-08-22 01:21:36 INFO: OPERATION_SUCCESS</journal_response_value>
+status-message=<journal_response_value>Journal created succesfully.</journal_response_value>
+
+2023-08-22 01:21:36 INFO: HWEEW RESPONSE
+2023-08-22 01:21:49 INFO: Stopping client...

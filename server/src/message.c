@@ -3,6 +3,7 @@
 #endif // _GNU_SOURCE
 
 #include "message.h"
+#include "logger.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -90,13 +91,13 @@ message_content* parse_content(char* content_str, size_t content_size) {
         current_content_size -= strlen(current_pos); 
 
         if (start = strstr(key_end + 1, start_tag)) {
-            start += 22;
-            current_content_size -= 22;
+            start += 23;
+            current_content_size -= 23;
 
             if (end = memmem((void*)start, current_content_size, (void*)end_tag, 24)) {
                 target = malloc((size_t)(end - start + 1));
                 memcpy(target, start, end - start);
-                target[end - start] = '\0';
+                target[end - start - 1] = '\0';
             }
         }
 
@@ -125,6 +126,10 @@ message_content* parse_content(char* content_str, size_t content_size) {
         target = NULL;
     }
 
+    if(last) {
+        last->next = NULL;
+    }
+
     return content;
 }
 
@@ -141,9 +146,10 @@ message_t* parse_message(int socket_fd, char* message_str) {
     message->header = header;
     message->content = NULL;
 
-    char* content_str = strstr("Content\n", message_str);
+    char* content_str = strstr(message_str, "Content\n");
+    log_info(message_str);
     if(content_str && header->length > 0) {
-        message->content = parse_content(content_str + 9, header->length);
+        message->content = parse_content(content_str + 8, header->length);
     }
 
     return message;

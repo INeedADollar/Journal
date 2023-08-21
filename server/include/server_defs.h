@@ -22,7 +22,6 @@ typedef enum {
 } operation_status;
 
 typedef struct {
-    command_types type;
     operation_status status;
     char status_message[1000];
     char* additional_data;

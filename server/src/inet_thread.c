@@ -87,7 +87,7 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
     size_t size_to_read = content_size == -1 ? 110 : content_size_to_read;
 	ssize_t received = recv(socket_fd, &part, size_to_read, 0);
 
-	if(received == OPERATION_FAIL) {
+	if(received < 1) {
 		log_error("Could not read from client %d.", socket_fd);
 		disconnect_client(0, socket_fd, active_set);
 		log_debug("Exiting read_message_part()");
@@ -132,8 +132,9 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 				}
 
 				user_id id = header->client_id;
+				command_types type = header->type;
 				free(header);
-				return send_command_result_message(client_socket_fd, id, result);
+				return send_command_result_message(client_socket_fd, type, id, result);
 			}
 
 			clients_data[client_socket_fd].header = header;
@@ -165,29 +166,29 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 		return enqueue_message(message);
 	}
 
-	if(header->length > 0) {
-		char* read_message_pos = read_message + received_len;
-		received_len = 0;
-		read_message_part(client_socket_fd, read_message_pos, &received_len, header->length, active_set);
-	}
-
 	if(!clients_data[client_socket_fd].header) {
-		read_message[received_len] = '\0';
+		size_t new_content_size = 0;
+		if(header->length > 0) {
+			char* read_message_pos = read_message + received_len;
+			read_message_part(client_socket_fd, read_message_pos, &new_content_size, header->length, active_set);
+		}
+
+		read_message[received_len + new_content_size] = '\0';
 		message_t* message = parse_message(client_socket_fd, read_message);
 		if(!message) {
 			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", read_message, header->client_id, client_socket_fd);
 			return OPERATION_FAIL;
 		}
 
-		free(header);
 		message_id id = message->id;
 		user_id usr_id = message->header->client_id;
+		command_types type = message->header->type;
 		command_result* result = check_message_and_run_command(message, active_set);
 		if(!result) {
 			return OPERATION_SUCCESS;
 		}
 
-		return send_command_result_message(id / 1000, usr_id, result);
+		return send_command_result_message(id / 1000, type, usr_id, result);
 	}
 
 	return OPERATION_SUCCESS;

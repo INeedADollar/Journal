@@ -41,13 +41,13 @@ void get_command_type_string(command_types type, char* buffer) {
 }
 
 
-operation_status send_command_result_message(int client_fd, user_id id, command_result* result) { 
-    size_t status_size = result->type == OPERATION_SUCCESS ? 18 : 15;
+operation_status send_command_result_message(int client_fd, command_types type, user_id id, command_result* result) { 
+    size_t status_size = result->status == OPERATION_SUCCESS ? 18 : 15;
     size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 190;
     char content[content_size + 8];
     char status[18];
 
-    if(result->type == OPERATION_SUCCESS) {
+    if(result->status == OPERATION_SUCCESS) {
         strcpy(status, "OPERATION_SUCCESS");
     }
     else {
@@ -57,8 +57,11 @@ operation_status send_command_result_message(int client_fd, user_id id, command_
     sprintf(content, "Content\nstatus=<journal_response_value>%s</journal_response_value>\nstatus-message=<journal_response_value>%s</journal_response_value>\n", status, result->status_message); 
 
     if(result->additional_data) {
-        char* content_end = content + (content_size - result->additional_data_size - 67);
-        sprintf(content_end, "additional-data=<journal_response_value>%s</journal_response_value>\n", result->additional_data);
+        log_info("%s %zu %zu", result->additional_data, result->additional_data_size, strlen(result->additional_data));
+        char* content_end = content + (content_size - result->additional_data_size - 61);
+        memcpy(content_end, "additional-data=<journal_response_value>", 41);
+        memcpy(content_end + 40, result->additional_data, result->additional_data_size);
+        memcpy(content_end + result->additional_data_size + 40, "</journal_response_value>\n", 27);
     }
     else {
         content_size -= 67;
@@ -67,14 +70,17 @@ operation_status send_command_result_message(int client_fd, user_id id, command_
     char header[110];
     char command_type[17];
 
-    get_command_type_string(result->type, command_type);
+    get_command_type_string(type, command_type);
     sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\n", command_type, content_size, id);
 
     size_t message_size = strlen(header) + content_size + 8;
     char message[message_size];
     sprintf(message, "%s%s", header, content);
 
+    log_info("Message to send: %s", message);
+
     ssize_t send_result = send(client_fd, message, message_size, 0);
+    log_info("%zu", send_result);
     if(send_result == OPERATION_FAIL) {
         log_error("Failed to send actual response to client with id %d", client_fd);
         return OPERATION_FAIL;
@@ -91,6 +97,7 @@ message_content_node_data* extract_value_from_content(message_content* content, 
 
     message_content_node* node = content->head;
     while(node) {
+        log_info("IN WHILE");
         if(strcmp(node->key, key) == 0) {
             return node->node_data;
         }

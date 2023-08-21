@@ -105,11 +105,13 @@ char* get_request_message(request_type type, char* content, size_t content_size,
     char request_type_str[18];
 
     get_request_type_string(type, request_type_str);
-    sprintf(message, "Header\ncommand-type<::::>%18s\ncontent-length<::::>%zu\nuser-id<::::>%lu\nContent\n",
+    sprintf(message, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\nContent\n",
         request_type_str, content_size, id);
 
     size_t current_message_size = strlen(message);
-    memcpy((void*)(message + strlen(message)), (void*)content, content_size);
+    if(content) {
+        memcpy((void*)(message + current_message_size), (void*)content, content_size);
+    }
 
     *message_size = current_message_size + content_size;
     return message;
@@ -117,6 +119,7 @@ char* get_request_message(request_type type, char* content, size_t content_size,
 
 
 void send_request(char* message, size_t message_size) {
+    log_info(message);
     ssize_t send_result = send(socket_fd, message, message_size, 0);
     if(send_result == -1) {
         log_error("Send error. Connection with server was closed. Error: %s", strerror(errno));
@@ -129,7 +132,7 @@ response* get_response() {
     char initial_message[110];
     ssize_t received = recv(socket_fd, &initial_message, 110, 0);
 
-    if(received == -1) {
+    if(received < 1) {
         log_error("Read error. Connection with server was closed. Error: %s", strerror(errno));
         exit(-1);
     }
@@ -153,26 +156,37 @@ response* get_response() {
         return NULL;
     }
 
-    content_start += 9;
+    content_start += 8;
+    *(content_start - 1) = '\0';
 
-    size_t received_content_size = received - (size_t)(content_start - initial_message);
+    log_info(initial_message);
+    size_t received_content_size = strlen(content_start);
     char content[content_length];
     char part[1024];
 
+    log_info("%zu", received_content_size);
+    if(received_content_size > 0) {
+        strcpy(content, (char*)(content_start));
+    }
+
+    log_info(content);
     while(received_content_size < content_length) {
         size_t size_to_read = 1024;
         if(received_content_size + size_to_read > content_length) {
             size_to_read = content_length - received_content_size;
         }
 
-        received = recv(socket_fd, &part, 1024, 0);
-        if(received == -1) {
+        received = recv(socket_fd, &part, size_to_read, 0);
+
+        if(received < 1) {
             log_error("%s read error. Connection with server was closed. Error: %s", request_type, strerror(errno));
             exit(-1);
         }
 
         memcpy((void*)(content + received_content_size), (void*)part, received);
         received_content_size += received;
+
+        log_info("%zu %zu", received_content_size, content_length);
     }
 
     content[content_length] = '\0';
@@ -185,7 +199,7 @@ response* get_response() {
         return NULL;
     }
 
-    status += 32;
+    status += 31;
     char* status_end_tag = strstr(status, "</journal_response_value>\n");
     if(!status_end_tag) {
         log_warning("Invalid content received: %s", content);
@@ -193,25 +207,23 @@ response* get_response() {
         return NULL;
     }
 
-    char status_str[18];
-    memcpy((void*)status_str, (void*)status, (size_t)(status_end_tag - status));
-
-    if(strcmp(status_str, "OPERATION_SUCCESS") == 0) {
+    log_info("%18s", status);
+    if(strncmp(status, "OPERATION_SUCCESS", 17) == 0) {
         resp->status = SUCCESS;
     }
     else {
         resp->status = FAIL;
     }
 
-    char* status_message = strstr(status_end_tag + 27, "status-message=<journal_response_value>");
+    char* status_message = strstr(status_end_tag + 26, "status-message=<journal_response_value>");
     if(!status_message) {
         log_warning("Invalid content received: %s", content);
         delete_response(resp);
         return NULL;
     }
 
-    status += 40;
-    char* status_message_end_tag = strstr(status, "</journal_response_value>\n");
+    status_message += 39;
+    char* status_message_end_tag = strstr(status_message, "</journal_response_value>\n");
     if(!status_message_end_tag) {
         log_warning("Invalid content received: %s", content);
         delete_response(resp);
@@ -232,7 +244,7 @@ response* get_response() {
         return resp;
     }
 
-    additional_data += 41;
+    additional_data += 40;
     char* additional_data_end_tag = memmem((void*)additional_data, content_length - (size_t)(content - additional_data),
         (void*)"</journal_response_value>\n", 27);
 
@@ -246,6 +258,7 @@ response* get_response() {
     resp->data_size = (size_t)(additional_data_end_tag - additional_data);
     resp->data = (char*)malloc(resp->data_size);
     memcpy((void*)resp->data, (void*)additional_data, resp->data_size);
+    resp->data[resp->data_size] = '\0';
 
     return resp;
 }
@@ -264,6 +277,7 @@ void get_user_id() {
         send_request(request_message, request_message_size);
 
         response* resp = get_response();
+
         if(!resp) {
             log_error("Could not register client with the server. Invalid response received.");
             exit(-1);
@@ -328,11 +342,11 @@ void register_notifications_callback(notification_callback callback) {
 
 response* create_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
-    char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s\n", journal_name);
+    char content[journal_name_size + 62];
+    sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_request_message(CREATE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(CREATE_JOURNAL, content, journal_name_size + 62, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -342,7 +356,7 @@ response* create_journal(char* journal_name) {
 response* retrieve_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
     char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s\n", journal_name);
+    sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", journal_name);
 
     size_t request_message_size;
     char* request_message = get_request_message(RETRIEVE_JOURNAL, content, 0, &request_message_size);
@@ -364,7 +378,7 @@ response* retrieve_journals() {
 response* delete_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
     char content[journal_name_size + 14];
-    sprintf(content, "journal-name=%s\n", journal_name);
+    sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", journal_name);
 
     size_t request_message_size;
     char* request_message = get_request_message(DELETE_JOURNAL, content, 0, &request_message_size);
@@ -378,16 +392,13 @@ void async_operation_thread(async_notif_thread_args* args) {
     size_t journal_name_size = strlen(args->journal_name);
     size_t content_key_size = strlen(args->content_key);
     char content[journal_name_size + args->data_size + content_key_size + 14];
-    
-    char format[content_key_size + 20];
+
     if(args->data) {
-        strcpy(format, "journal-name=%s\n%s=");
-        sprintf(content, format, args->journal_name, args->content_key);
-        memcpy((void*)(content + journal_name_size + content_key_size + 16), (void*)args->data, args->data_size);
+        sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n%s=<journal_request_value>", args->journal_name, args->content_key);
+        memcpy((void*)(content + journal_name_size + content_key_size + 85), (void*)args->data, args->data_size);
     }
     else {
-        strcpy(format, "journal-name=%s\n");
-        sprintf(content, format, args->journal_name);
+        sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", args->journal_name);
     }
 
     size_t request_message_size;

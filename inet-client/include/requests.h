@@ -5,8 +5,8 @@
 
 
 typedef enum {
-    FAIL,
-    SUCCESS
+    FAIL = -1,
+    SUCCESS = 0
 } status_t;
 
 typedef struct {
