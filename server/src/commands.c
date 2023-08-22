@@ -52,8 +52,8 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
         message_content_node* node = message->content->head;
         while(node) {
             log_info("%s = %s", node->key, node->node_data->value);
+            log_info("%zu", node->node_data->size);
             node = node->next;
-            log_info("%d", (int)(node == NULL));
         }
     }
     else {
@@ -407,6 +407,7 @@ command_result* modify_journal(user_id id, char* journal_name, char* new_content
 
 
 command_result* delete_journal(user_id id, char* journal_name) {
+    log_info(journal_name);
     char journal_path[1024];
     get_journal_path(id, journal_name, journal_path);
 

@@ -6,7 +6,7 @@
 
 message_header* parse_header(char* partial_message);
 
-message_t* parse_message(int socked_fd, char* message);
+message_t* parse_message(int socked_fd, char* message, message_header* header);
 
 void delete_message(message_t* message);
 

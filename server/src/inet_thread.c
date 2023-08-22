@@ -85,6 +85,7 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 	char part[1024];
 	size_t content_size_to_read = *current_size + 1024 > content_size ? content_size - *current_size : 1024;
     size_t size_to_read = content_size == -1 ? 110 : content_size_to_read;
+	log_info("%zu size_to_read %zu", size_to_read, *current_size);
 	ssize_t received = recv(socket_fd, &part, size_to_read, 0);
 
 	if(received < 1) {
@@ -138,43 +139,24 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 			}
 
 			clients_data[client_socket_fd].header = header;
-			clients_data[client_socket_fd].buffered_content_size = strlen(content_start + 9);
+			clients_data[client_socket_fd].buffered_content_size = strlen(content_start + 8);
 			clients_data[client_socket_fd].buffered_content = (char*)malloc(header->length);
 
-			strcpy(clients_data[client_socket_fd].buffered_content, content_start + 9);
+			strcpy(clients_data[client_socket_fd].buffered_content, content_start + 8);
+			log_info(clients_data[client_socket_fd].buffered_content);
 		}
 	}
-    else if(clients_data[client_socket_fd].buffered_content_size == clients_data[client_socket_fd].header->length) {
-		size_t current_size = clients_data[client_socket_fd].buffered_content_size;
-		clients_data[client_socket_fd].buffered_content[current_size] = '\0';
-		message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_content);
 
-		char message_copy[clients_data[client_socket_fd].buffered_content_size];
-		memcpy(message_copy, clients_data[client_socket_fd].buffered_content, current_size);
-
-		free(clients_data[client_socket_fd].header);
-		clients_data[client_socket_fd].header = NULL;
-		
-		free(clients_data[client_socket_fd].buffered_content);
-		clients_data[client_socket_fd].buffered_content_size = 0;
-
-		if(!message) {
-			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", message_copy, header->client_id, client_socket_fd);
-			return OPERATION_FAIL;
-		}
-
-		return enqueue_message(message);
-	}
-
+	char* read_message_pos = NULL;
+	size_t new_content_size = 0;
 	if(!clients_data[client_socket_fd].header) {
-		size_t new_content_size = 0;
 		if(header->length > 0) {
-			char* read_message_pos = read_message + received_len;
+			read_message_pos = read_message + received_len;
 			read_message_part(client_socket_fd, read_message_pos, &new_content_size, header->length, active_set);
 		}
 
 		read_message[received_len + new_content_size] = '\0';
-		message_t* message = parse_message(client_socket_fd, read_message);
+		message_t* message = parse_message(client_socket_fd, read_message, NULL);
 		if(!message) {
 			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", read_message, header->client_id, client_socket_fd);
 			return OPERATION_FAIL;
@@ -189,6 +171,40 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 		}
 
 		return send_command_result_message(id / 1000, type, usr_id, result);
+	}
+	else {
+		log_info("HERER %zu", clients_data[client_socket_fd].buffered_content_size);
+		read_message_pos = clients_data[client_socket_fd].buffered_content + clients_data[client_socket_fd].buffered_content_size - 1;
+		new_content_size = clients_data[client_socket_fd].buffered_content_size;
+
+		read_message_part(client_socket_fd, read_message_pos, &new_content_size, header->length, active_set);
+		clients_data[client_socket_fd].buffered_content_size = new_content_size;
+
+		log_info("%zu received %d", new_content_size, *(read_message_pos + new_content_size));
+
+		log_info("%zu == %zu", clients_data[client_socket_fd].buffered_content_size, clients_data[client_socket_fd].header->length);
+		if(clients_data[client_socket_fd].buffered_content_size == clients_data[client_socket_fd].header->length) {
+			size_t current_size = clients_data[client_socket_fd].buffered_content_size;
+			log_info("%zu current", current_size);
+			clients_data[client_socket_fd].buffered_content[current_size] = '\0';
+
+			message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_content, clients_data[client_socket_fd].header);
+
+			char message_copy[clients_data[client_socket_fd].buffered_content_size];
+			memcpy(message_copy, clients_data[client_socket_fd].buffered_content, current_size);
+			
+			free(clients_data[client_socket_fd].buffered_content);
+			clients_data[client_socket_fd].buffered_content_size = 0;
+
+			if(!message) {
+				log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", message_copy, header->client_id, client_socket_fd);
+				return OPERATION_FAIL;
+			}
+
+			log_info(message_copy);
+			log_info("Message enqueued.");
+			return enqueue_message(message);
+		}
 	}
 
 	return OPERATION_SUCCESS;
@@ -229,9 +245,9 @@ void inet_thread(void* args) {
 
                 }
                 else {
-					log_debug("Entering handle_client_command()");
+					log_debug("Entering read_and_handle_client_command()");
                     read_and_handle_client_command(&active_sockets_set, fd);
-					log_debug("Exiting handle_client_command()");
+					log_debug("Exiting read_and_handle_client_command()");
                 }
             }
 		}

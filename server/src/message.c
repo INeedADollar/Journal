@@ -97,7 +97,7 @@ message_content* parse_content(char* content_str, size_t content_size) {
             if (end = memmem((void*)start, current_content_size, (void*)end_tag, 24)) {
                 target = malloc((size_t)(end - start + 1));
                 memcpy(target, start, end - start);
-                target[end - start - 1] = '\0';
+                target[end - start] = '\0';
             }
         }
 
@@ -134,10 +134,12 @@ message_content* parse_content(char* content_str, size_t content_size) {
 }
 
 
-message_t* parse_message(int socket_fd, char* message_str) {
-    message_header* header = parse_header(message_str);
-    if(header == NULL) {
-        return NULL;
+message_t* parse_message(int socket_fd, char* message_str, message_header* header) {
+    if(!header) {
+        header = parse_header(message_str);
+        if(header == NULL) {
+            return NULL;
+        }
     }
 
     srandom(time(NULL));

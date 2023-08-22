@@ -83,6 +83,8 @@ void show_create_journal_screen() {
         return;
     }
 
+    journal_name[strlen(journal_name) - 1] = '\0';
+
     puts("Creating journal. Please wait...");
     response* resp = create_journal(journal_name);
 
@@ -170,6 +172,7 @@ void show_import_journal_screen() {
         return;
     }
 
+    journal_name[strlen(journal_name) - 1] = '\0';
     puts("Choose journal location:\n");
 
     const char zenity_path[] = "/usr/bin/zenity";
@@ -336,23 +339,23 @@ void show_journal_screen(size_t journal_nr) {
 
 
 void show_delete_journal_screen(size_t journal_nr) {
-    printf("Deleting journal %s...", journals[journal_nr]);
+    printf("Deleting journal %s...", journals[journal_nr - 1]);
 
-    response* resp = delete_journal(journals[journal_nr]);
+    response* resp = delete_journal(journals[journal_nr - 1]);
     if(!resp) {
-        sleep(1);
+        sleep(2);
         return;
     }
 
     if(resp->status == SUCCESS) {
-        free(journals[journal_nr]);
-        memmove((void*)journals + journal_nr, (void*)(journals + journal_nr + 1), (journals_count - journal_nr - 1) * sizeof(char*));
+        free(journals[journal_nr - 1]);
+        memmove((void*)journals + journal_nr - 1, (void*)(journals + journal_nr), (journals_count - journal_nr) * sizeof(char*));
         journals_count--;
     }
 
     puts(resp->status_message);
     delete_response(resp);
-    sleep(1);
+    sleep(2);
 }
 
 
@@ -371,14 +374,14 @@ void get_and_handle_choice() {
 
     int journal_nr = -1;
     char choice;
-    int res = sscanf(choice_str, "%c\n", &choice);
+    int res = sscanf(choice_str, "%d%c\n", &journal_nr, &choice);
+
+    if(res < 2) {
+        res = sscanf(choice_str, "%c\n", &choice);
+    }
     free(choice_str);
 
     if(res < 1) {
-        int res = sscanf(choice_str, "%d%c\n", &journal_nr, &choice);
-    }
-
-    if(res < 1 || res == EOF) {
         puts("Invalid command. Try again. \n");
         sleep(1);
         return;

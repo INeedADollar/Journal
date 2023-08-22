@@ -377,11 +377,11 @@ response* retrieve_journals() {
 
 response* delete_journal(char* journal_name) {
     size_t journal_name_size = strlen(journal_name);
-    char content[journal_name_size + 14];
+    char content[journal_name_size + 62];
     sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_request_message(DELETE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(DELETE_JOURNAL, content, journal_name_size + 62, &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();
@@ -397,14 +397,14 @@ void async_operation_thread(async_notif_thread_args* args) {
     if(args->data) {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n%s=<journal_request_value>", args->journal_name, args->content_key);
         memcpy((void*)(content + journal_name_size + content_key_size + 85), (void*)args->data, args->data_size);
-        memcpy((void*)(content + journal_name_size + content_key_size + args->data_size + 85), "</journal_request_value>");
+        memcpy((void*)(content + journal_name_size + content_key_size + args->data_size + 83), "</journal_request_value>", 25);
     }
     else {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", args->journal_name);
         content_size -= content_key_size + args->data_size + 59;
     }
 
-    log_debug("%d", content_size);
+    log_debug("%zu %zu", content_size, args->data_size);
     size_t request_message_size;
     char* request_message = get_request_message(args->type, content, content_size, &request_message_size);
     send_request(request_message, request_message_size);
