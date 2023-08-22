@@ -290,14 +290,16 @@ command_result* retrieve_journals(user_id id) {
                 destination = journals;
             }
             else {
-                destination = journals + current_journals_size - 1;
+                destination = journals + current_journals_size - journal_name_size - 1;
             }
 
+            log_info(journals);
             sprintf(destination, "%s;", journal_name);
         }
 
         closedir(user_directory);
     }
+
 
     if(strcmp(journals, "") == 0) {
         return get_command_result(OPERATION_SUCCESS, "No journals found.", NULL, 0);

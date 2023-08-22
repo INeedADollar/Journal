@@ -391,18 +391,22 @@ response* delete_journal(char* journal_name) {
 void async_operation_thread(async_notif_thread_args* args) {
     size_t journal_name_size = strlen(args->journal_name);
     size_t content_key_size = strlen(args->content_key);
-    char content[journal_name_size + args->data_size + content_key_size + 14];
+    size_t content_size = journal_name_size + args->data_size + content_key_size + 111;
+    char content[content_size];
 
     if(args->data) {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n%s=<journal_request_value>", args->journal_name, args->content_key);
         memcpy((void*)(content + journal_name_size + content_key_size + 85), (void*)args->data, args->data_size);
+        memcpy((void*)(content + journal_name_size + content_key_size + args->data_size + 85), "</journal_request_value>");
     }
     else {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", args->journal_name);
+        content_size -= content_key_size + args->data_size + 59;
     }
 
+    log_debug("%d", content_size);
     size_t request_message_size;
-    char* request_message = get_request_message(args->type, content, 0, &request_message_size);
+    char* request_message = get_request_message(args->type, content, content_size, &request_message_size);
     send_request(request_message, request_message_size);
 
     response* response = get_response();
@@ -427,9 +431,12 @@ int import_journal(char* journal_name, char* journal_content, size_t journal_con
     args->data_size = journal_content_size;
     args->type = IMPORT_JOURNAL;
 
+     log_debug("Before strcpy");
     strcpy(args->journal_name, journal_name);
     strcpy(args->content_key, "journal-content");
-    strcpy(args->data, journal_content);
+    
+    memcpy(args->data, journal_content, journal_content_size);
+    log_debug("After strcpy");
 
     pthread_t thread;
     int res = pthread_create(&thread, (pthread_attr_t*)NULL, (void * (*)(void *))async_operation_thread, (void*)args);

@@ -1,42 +1,39 @@
-2023-08-22 01:21:33 INFO: Fetching journals. Please wait...
-2023-08-22 01:21:33 INFO: Header
+2023-08-22 04:25:49 INFO: Fetching journals. Please wait...
+2023-08-22 04:25:49 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
 content-length<::::>0
 user-id<::::>692643178
 Content
 
-2023-08-22 01:21:33 INFO: Header
+2023-08-22 04:25:49 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
-content-length<::::>311
+content-length<::::>351
 user-id<::::>692643178
 Content
-2023-08-22 01:21:33 INFO: 12
-2023-08-22 01:21:33 INFO: status=<jour
-2023-08-22 01:21:33 INFO: 311 311
-2023-08-22 01:21:33 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-08-22 04:25:49 INFO: 12
+2023-08-22 04:25:49 INFO: status=<jour
+2023-08-22 04:25:49 INFO: 351 351
+2023-08-22 04:25:49 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journals retrieved succesfully.</journal_response_value>
-additional-data=<journal_response_value>Fifth Journal;
-2023-08-22 01:21:33 INFO: (null) sad
-2023-08-22 01:21:33 INFO: There are no journals found. Create or import one.
-2023-08-22 01:21:35 INFO: Chosen command: c
-2023-08-22 01:21:36 INFO: Header
-command-type<::::>CREATE_JOURNAL
-content-length<::::>69
+additional-data=<journal_response_value>Andreea frumoasa mea;Fifth Journal;First Journal;Fourth Journal;New journal;sagsdg;Second Journal;Third journal;</journal_response_value>
+
+2023-08-22 04:25:49 INFO: Andreea frumoasa mea;Fifth Journal;First Journal;Fourth Journal;New journal;sagsdg;Second Journal;Third journal; sad
+2023-08-22 04:25:50 INFO: Chosen command: i
+2023-08-22 04:25:57 DEBUG: Chosen journal path: /mnt/e/Projects/Proiect PCD/Journal/journals/692643178/New journal.zip
+2023-08-22 04:25:57 DEBUG: Opened zip file: /mnt/e/Projects/Proiect PCD/Journal/journals/692643178/New journal.zip
+
+2023-08-22 04:25:57 DEBUG: Size 22
+2023-08-22 04:25:57 DEBUG: Size 22
+2023-08-22 04:25:57 DEBUG: Size 22
+2023-08-22 04:25:57 DEBUG: Size 22
+2023-08-22 04:25:57 DEBUG: Zip loaded succesfully. 22
+2023-08-22 04:25:57 DEBUG: Before strcpy
+2023-08-22 04:25:57 DEBUG: After strcpy
+2023-08-22 04:25:57 INFO: HERER
+2023-08-22 04:25:57 INFO: Header
+command-type<::::>IMPORT_JOURNAL
+content-length<::::>0
 user-id<::::>692643178
 Content
-journal-name=<journal_request_value>sagsdg
-</journal_request_value>
 
-2023-08-22 01:21:36 INFO: Header
-command-type<::::>CREATE_JOURNAL
-content-length<::::>169
-user-id<::::>692643178
-Content
-2023-08-22 01:21:36 INFO: 15
-2023-08-22 01:21:36 INFO: status=<journal
-2023-08-22 01:21:36 INFO: 169 169
-2023-08-22 01:21:36 INFO: OPERATION_SUCCESS</journal_response_value>
-status-message=<journal_response_value>Journal created succesfully.</journal_response_value>
-
-2023-08-22 01:21:36 INFO: HWEEW RESPONSE
-2023-08-22 01:21:49 INFO: Stopping client...
+2023-08-22 04:25:58 INFO: FINal handle
