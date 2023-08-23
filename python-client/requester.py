@@ -30,8 +30,10 @@ class Requester(QObject):
 
     # encoding problem when receiving bytes that are not text
     def __read_message(self):
-        message_read = self.client_socket.recv(100).decode()
+        message_read = self.client_socket.recv(110).decode()
+        print(message_read)
         parsed_header = parse("Header\ncommand-type<::::>{}\ncontent-length<::::>{}\nuser-id<::::>{}\n", message_read)
+        print(parsed_header)
         
         try:
             command_type = CommandTypes[parsed_header[0]]
@@ -86,6 +88,7 @@ class Requester(QObject):
             try:
                 self.client_socket.connect((self.server_addr, self.server_port))
                 time.sleep(1)
+                break;
             except Exception as e:
                 print(f"Connection with server could not be established {tries} times. Exception: {e}")
 
@@ -97,11 +100,8 @@ class Requester(QObject):
         self.__get_id()
 
         while True:
-            if self.journal_window_callback is None or self.journals_window_callback is None:
-                time.sleep(1)
-                continue
-
             message = self.__read_message()
+            print(message)
             self.__handle_message(message)       
 
     def start(self):
@@ -126,6 +126,7 @@ class Requester(QObject):
             self.id = self.generate_id()
 
     def __save_id(self, id):
+        print("SAVE ID");
         self.id = id
 
         try:
@@ -165,7 +166,7 @@ class Requester(QObject):
         return content_str
     
     def __create_message(self, command_type, content = None):
-        content_length = -1
+        content_length = 0
         content_part = "Content\n"
         if content is not None:
             content_length = len(content)

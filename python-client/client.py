@@ -10,9 +10,9 @@ def show_requester_critical_error(message):
 
 def main():
     app = QApplication(sys.argv)
-    client_requester = Requester("", 1234)  # de completat adresa si portul
+    client_requester = Requester("127.0.0.2", 5000)  # de completat adresa si portul
     client_requester.critical.connect(show_requester_critical_error)
-    #client_requester.start()
+    client_requester.start()
 
     journals_window = JournalsWindow(client_requester)
     journals_window.show()
