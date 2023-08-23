@@ -397,7 +397,7 @@ void async_operation_thread(async_notif_thread_args* args) {
     if(args->data) {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n%s=<journal_request_value>", args->journal_name, args->content_key);
         memcpy((void*)(content + journal_name_size + content_key_size + 85), (void*)args->data, args->data_size);
-        memcpy((void*)(content + journal_name_size + content_key_size + args->data_size + 83), "</journal_request_value>", 25);
+        memcpy((void*)(content + journal_name_size + content_key_size + args->data_size + 83), "</journal_request_value>\n", 25);
     }
     else {
         sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", args->journal_name);
@@ -431,9 +431,9 @@ int import_journal(char* journal_name, char* journal_content, size_t journal_con
     args->data_size = journal_content_size;
     args->type = IMPORT_JOURNAL;
 
-     log_debug("Before strcpy");
+    log_debug("Before strcpy");
     strcpy(args->journal_name, journal_name);
-    strcpy(args->content_key, "journal-content");
+    strcpy(args->content_key, "journal-data");
     
     memcpy(args->data, journal_content, journal_content_size);
     log_debug("After strcpy");

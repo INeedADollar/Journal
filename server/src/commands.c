@@ -212,18 +212,19 @@ command_result* create_journal(user_id id, char* journal_name) {
     }
 
     char journal_path[1024];
-    const char* zip_files[] = {
-        "1.txt",
-        "2.txt"
-    };
+
 
     log_info(journal_name);
     sprintf(journal_path, "./journals/%lu/%s.zip", id, journal_name);
-    operation_status status = (operation_status)zip_create(journal_path, (const char**)zip_files, 1);
-    if(status == OPERATION_FAIL) {
+    struct zip_t *zip = zip_open(journal_path, ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
+    if(!zip) {
         log_error("Zip %s could not be created for user with id %lu. Error: %s.", id, strerror(errno));
         return get_command_result(OPERATION_FAIL, "Journal could not be created.", (char*)NULL, 0);
     }
+
+    zip_entry_open(zip, "1.txt");
+    zip_entry_close(zip);
+    zip_close(zip);
 
     log_debug("Journal %s created succesfully.\n", journal_name);
     return get_command_result(OPERATION_SUCCESS, "Journal created succesfully.", NULL, 0);

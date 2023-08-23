@@ -21,6 +21,13 @@ static size_t journals_count = 0;
 static char* journal_imported = NULL;
 static char* journal_saved = NULL;
 
+void add_new_journal(char* journal_name) {
+    journals[journals_count] = (char*)malloc(strlen(journal_name) + 1);
+    strcpy(journals[journals_count], journal_name);
+    journals_count++;
+}
+
+
 void notif_callback(response* resp, request_type type) {
     if(!resp) {
         return;
@@ -29,11 +36,17 @@ void notif_callback(response* resp, request_type type) {
     char message[strlen(resp->status_message) + 100];
     if(type == IMPORT_JOURNAL) {
         sprintf(message, "%s\n%s", journal_imported, resp->status_message);
+        if(resp->status == SUCCESS) {
+            add_new_journal(journal_imported);
+        }
+
         free(journal_imported);
+        journal_imported = NULL;
     }
     else {
         sprintf(message, "%s\n%s", journal_saved, resp->status_message);
         free(journal_saved);
+        journal_saved = NULL;
     }
 
     char command[100];
@@ -52,19 +65,16 @@ void print_menu() {
     system("clear");
     printf("Journals\n");
 
-    for(size_t i = 0; i < journals_count; i++) {
-        printf("%zu. %s\n", i + 1, journals[i]);
+    if(journals_count == 0) {
+        puts("There are no journals found. Create or import one.");
+    }
+    else {
+        for(size_t i = 0; i < journals_count; i++) {
+            printf("%zu. %s\n", i + 1, journals[i]);
+        }
     }
 
     print_controls();
-}
-
-
-
-void add_new_journal(char* journal_name) {
-    journals[journals_count] = (char*)malloc(strlen(journal_name) + 1);
-    strcpy(journals[journals_count], journal_name);
-    journals_count++;
 }
 
 
@@ -88,7 +98,7 @@ void show_create_journal_screen() {
     puts("Creating journal. Please wait...");
     response* resp = create_journal(journal_name);
 
-    log_info("HWEEW RESPONSE");
+    log_info("HWEEW RESPONSE %li", resp);
     if(!resp) {
         sleep(1);
         return;
@@ -348,9 +358,9 @@ void show_delete_journal_screen(size_t journal_nr) {
     }
 
     if(resp->status == SUCCESS) {
-        free(journals[journal_nr - 1]);
-        memmove((void*)journals + journal_nr - 1, (void*)(journals + journal_nr), (journals_count - journal_nr) * sizeof(char*));
+        memmove((void*)(journals + journal_nr - 1), (void*)(journals + journal_nr), (journals_count - journal_nr) * sizeof(char*));
         journals_count--;
+        //free(journals[journal_nr - 1]);
     }
 
     puts(resp->status_message);
@@ -390,6 +400,12 @@ void get_and_handle_choice() {
     log_info("Chosen command: %c", choice);
     if(journal_nr == -1 && (choice == 's' || choice == 'd')) {
         puts("Invalid command. Try again.\n");
+        sleep(1);
+        return;
+    }
+
+    if(journal_nr > journals_count && (choice == 's' || choice == 'd')) {
+        puts("Invalid journal number. Try again.\n");
         sleep(1);
         return;
     }
@@ -435,13 +451,12 @@ void init_interface() {
     response* resp = retrieve_journals();
     log_info("%s sad", resp->data);
 
+    journals = (char**)malloc(100 * sizeof(char*));
     if(!resp || resp->status == FAIL || !resp->data) {
         log_info("There are no journals found. Create or import one.");
     }
     else {
         printf("Journals\n");
-
-        journals = (char**)malloc(100 * sizeof(char*));
         char* p = strtok(resp->data, ";");
         while(p) {
             add_new_journal(p);

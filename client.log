@@ -1,61 +1,114 @@
-2023-08-22 14:06:48 INFO: Fetching journals. Please wait...
-2023-08-22 14:06:48 INFO: Header
+2023-08-23 04:47:13 INFO: Fetching journals. Please wait...
+2023-08-23 04:47:13 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
 content-length<::::>0
 user-id<::::>692643178
 Content
 
-2023-08-22 14:06:48 INFO: Header
+2023-08-23 04:47:13 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
-content-length<::::>274
+content-length<::::>305
 user-id<::::>692643178
 Content
-2023-08-22 14:06:48 INFO: 12
-2023-08-22 14:06:48 INFO: status=<jour
-2023-08-22 14:06:48 INFO: 274 274
-2023-08-22 14:06:48 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-08-23 04:47:13 INFO: 12
+2023-08-23 04:47:13 INFO: status=<jour
+2023-08-23 04:47:13 INFO: 305 305
+2023-08-23 04:47:13 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journals retrieved succesfully.</journal_response_value>
-additional-data=<journal_response_value>Andreea frumoasa mea;Third journal;</journal_response_value>
+additional-data=<journal_response_value>adfdfds;dffdsd;dffsddsf;fdsfds;fdssdf;saddsaf;sadsaf;sadsf;sdasaf;</journal_response_value>
 
-2023-08-22 14:06:48 INFO: Andreea frumoasa mea;Third journal; sad
-2023-08-22 14:06:49 INFO: Chosen command: c
-2023-08-22 14:06:55 INFO: Header
+2023-08-23 04:47:13 INFO: adfdfds;dffdsd;dffsddsf;fdsfds;fdssdf;saddsaf;sadsaf;sadsf;sdasaf; sad
+2023-08-23 04:47:15 INFO: Chosen command: c
+2023-08-23 04:47:19 INFO: Header
 command-type<::::>CREATE_JOURNAL
-content-length<::::>73
+content-length<::::>85
 user-id<::::>692643178
 Content
-journal-name=<journal_request_value>New Journal</journal_request_value>
+journal-name=<journal_request_value>Puiuta mea extrem de qt</journal_request_value>
 
-2023-08-22 14:06:55 INFO: Header
+2023-08-23 04:47:19 INFO: Header
 command-type<::::>CREATE_JOURNAL
 content-length<::::>169
 user-id<::::>692643178
 Content
-2023-08-22 14:06:55 INFO: 15
-2023-08-22 14:06:55 INFO: status=<journal
-2023-08-22 14:06:55 INFO: 169 169
-2023-08-22 14:06:55 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-08-23 04:47:19 INFO: 15
+2023-08-23 04:47:19 INFO: status=<journal
+2023-08-23 04:47:19 INFO: 169 169
+2023-08-23 04:47:19 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journal created succesfully.</journal_response_value>
 
-2023-08-22 14:06:55 INFO: HWEEW RESPONSE
-2023-08-22 14:06:56 INFO: FINal handle
-2023-08-22 14:07:03 INFO: Chosen command: d
-2023-08-22 14:07:03 INFO: Header
+2023-08-23 04:47:19 INFO: HWEEW RESPONSE 94429558155264
+2023-08-23 04:47:20 INFO: FINal handle
+2023-08-23 04:47:28 INFO: Chosen command: d
+2023-08-23 04:47:28 INFO: Header
 command-type<::::>DELETE_JOURNAL
-content-length<::::>75
+content-length<::::>68
 user-id<::::>692643178
 Content
-journal-name=<journal_request_value>Third journal</journal_request_value>
+journal-name=<journal_request_value>sdasaf</journal_request_value>
 
-2023-08-22 14:07:03 INFO: Header
+2023-08-23 04:47:28 INFO: Header
 command-type<::::>DELETE_JOURNAL
 content-length<::::>169
 user-id<::::>692643178
 Content
-2023-08-22 14:07:03 INFO: 15
-2023-08-22 14:07:03 INFO: status=<journal
-2023-08-22 14:07:03 INFO: 169 169
-2023-08-22 14:07:03 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-08-23 04:47:28 INFO: 15
+2023-08-23 04:47:28 INFO: status=<journal
+2023-08-23 04:47:28 INFO: 169 169
+2023-08-23 04:47:28 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journal deleted succesfully.</journal_response_value>
 
-2023-08-22 14:07:05 INFO: FINal handle
+2023-08-23 04:47:30 INFO: FINal handle
+2023-08-23 04:47:42 INFO: Chosen command: d
+2023-08-23 04:47:42 INFO: Header
+command-type<::::>DELETE_JOURNAL
+content-length<::::>69
+user-id<::::>692643178
+Content
+journal-name=<journal_request_value>adfdfds</journal_request_value>
+
+2023-08-23 04:47:42 INFO: Header
+command-type<::::>DELETE_JOURNAL
+content-length<::::>169
+user-id<::::>692643178
+Content
+2023-08-23 04:47:42 INFO: 15
+2023-08-23 04:47:42 INFO: status=<journal
+2023-08-23 04:47:42 INFO: 169 169
+2023-08-23 04:47:42 INFO: OPERATION_SUCCESS</journal_response_value>
+status-message=<journal_response_value>Journal deleted succesfully.</journal_response_value>
+
+2023-08-23 04:47:44 INFO: FINal handle
+2023-08-23 04:47:53 INFO: Chosen command: i
+2023-08-23 04:48:03 DEBUG: Chosen journal path: /mnt/e/Projects/Proiect PCD/Journal/journals/692643178/Puiuta mea extrem de qt.zip
+2023-08-23 04:48:03 DEBUG: Opened zip file: /mnt/e/Projects/Proiect PCD/Journal/journals/692643178/Puiuta mea extrem de qt.zip
+
+2023-08-23 04:48:03 DEBUG: Size 218
+2023-08-23 04:48:03 DEBUG: Size 218
+2023-08-23 04:48:03 DEBUG: Size 218
+2023-08-23 04:48:03 DEBUG: Size 218
+2023-08-23 04:48:03 DEBUG: Zip loaded succesfully. 218
+2023-08-23 04:48:03 DEBUG: Before strcpy
+2023-08-23 04:48:03 DEBUG: After strcpy
+2023-08-23 04:48:03 INFO: HERER
+2023-08-23 04:48:03 DEBUG: 345 218
+2023-08-23 04:48:03 INFO: Header
+command-type<::::>IMPORT_JOURNAL
+content-length<::::>345
+user-id<::::>692643178
+Content
+journal-name=<journal_request_value>test</journal_request_value>
+journal-data=<journal_request_value>PK
+2023-08-23 04:48:03 INFO: Header
+command-type<::::>IMPORT_JOURNAL
+content-length<::::>170
+user-id<::::>692643178
+Content
+2023-08-23 04:48:03 INFO: 15
+2023-08-23 04:48:03 INFO: status=<journal
+2023-08-23 04:48:03 INFO: 170 170
+2023-08-23 04:48:03 INFO: OPERATION_SUCCESS</journal_response_value>
+status-message=<journal_response_value>Journal imported succesfully.</journal_response_value>
+
+2023-08-23 04:48:04 INFO: FINal handle
+2023-08-23 04:49:28 INFO: Chosen command: e

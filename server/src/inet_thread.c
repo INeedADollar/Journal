@@ -96,8 +96,9 @@ operation_status read_message_part(int socket_fd, char* buffer, size_t* current_
 		return OPERATION_FAIL;
 	}
 
-    memcpy(buffer + *current_size, part, received);
+    memcpy(buffer, part, received);
 	*current_size += received;
+	log_info("Buffer %s %zu", buffer, *current_size);
 	log_debug("Exiting read_message_part()");
 
 	return OPERATION_SUCCESS;
@@ -111,6 +112,7 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 	if(!clients_data[client_socket_fd].header) {
 		read_message_part(client_socket_fd, read_message, &received_len, -1, active_set);
 		read_message[received_len] = '\0';
+		log_info(read_message);
 		
 		header = parse_header(read_message);
 		if(header == NULL) {
@@ -142,8 +144,9 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 			clients_data[client_socket_fd].buffered_content_size = strlen(content_start + 8);
 			clients_data[client_socket_fd].buffered_content = (char*)malloc(header->length);
 
-			strcpy(clients_data[client_socket_fd].buffered_content, content_start + 8);
+			strncpy(clients_data[client_socket_fd].buffered_content, content_start + 8, clients_data[client_socket_fd].buffered_content_size);
 			log_info(clients_data[client_socket_fd].buffered_content);
+			return OPERATION_SUCCESS;
 		}
 	}
 
@@ -156,6 +159,7 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 		}
 
 		read_message[received_len + new_content_size] = '\0';
+		log_info("read_message");
 		message_t* message = parse_message(client_socket_fd, read_message, NULL);
 		if(!message) {
 			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", read_message, header->client_id, client_socket_fd);
@@ -174,10 +178,12 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 	}
 	else {
 		log_info("HERER %zu", clients_data[client_socket_fd].buffered_content_size);
-		read_message_pos = clients_data[client_socket_fd].buffered_content + clients_data[client_socket_fd].buffered_content_size - 1;
+		read_message_pos = clients_data[client_socket_fd].buffered_content + clients_data[client_socket_fd].buffered_content_size;
 		new_content_size = clients_data[client_socket_fd].buffered_content_size;
 
-		read_message_part(client_socket_fd, read_message_pos, &new_content_size, header->length, active_set);
+		log_info("DGGDdGDD %zu", clients_data[client_socket_fd].buffered_content_size);
+
+		read_message_part(client_socket_fd, read_message_pos, &new_content_size, clients_data[client_socket_fd].header->length, active_set);
 		clients_data[client_socket_fd].buffered_content_size = new_content_size;
 
 		log_info("%zu received %d", new_content_size, *(read_message_pos + new_content_size));
@@ -189,6 +195,7 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 			clients_data[client_socket_fd].buffered_content[current_size] = '\0';
 
 			message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_content, clients_data[client_socket_fd].header);
+			clients_data[client_socket_fd].header = NULL;
 
 			char message_copy[clients_data[client_socket_fd].buffered_content_size];
 			memcpy(message_copy, clients_data[client_socket_fd].buffered_content, current_size);

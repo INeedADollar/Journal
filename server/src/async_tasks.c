@@ -1,6 +1,7 @@
 #include "async_tasks.h"
 #include "commands.h"
 #include "utils.h"
+#include "logger.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -14,11 +15,13 @@ void init_thread_pool() {
 
 
 void retrieve_journal_task(retrieve_journal_args* args) {
+    log_info("Retrive journal task started for client with id %lu.", args->usr_id);
     command_result* result = retrieve_journal(args->usr_id, args->journal_name);
     send_command_result_message(args->message_id / 1000, RETRIEVE_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args);
+    log_info("Retrive journal task ended for client with id %lu.", args->usr_id);
 }
 
 
@@ -34,12 +37,14 @@ operation_status create_retrieve_journal_task(user_id id, message_id msg_id, cha
 
 
 void import_journal_task(import_journal_args* args) {
+    log_info("Import journal task started for client with id %lu.", args->usr_id);
     command_result* result = import_journal(args->usr_id, args->journal_name, args->journal_content, args->journal_content_size);
     send_command_result_message(args->message_id / 1000, IMPORT_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args->journal_content);
     free(args);
+    log_info("Import journal task ended for client with id %lu.", args->usr_id);
 }
 
 operation_status create_import_journal_task(user_id id, message_id msg_id, char* journal_name, char* journal_data, size_t journal_data_size) {
@@ -59,12 +64,14 @@ operation_status create_import_journal_task(user_id id, message_id msg_id, char*
 
 
 void modify_journal_task(modify_journal_args* args) {
+    log_info("Modify journal task started for client with id %lu.", args->usr_id);
     command_result* result = modify_journal(args->usr_id, args->journal_name, args->new_content, args->new_content_size);
     send_command_result_message(args->message_id / 1000, MODIFY_JOURNAL, args->usr_id, result);
 
     free(args->journal_name);
     free(args->new_content);
     free(args);
+    log_info("Modify journal task ended for client with id %lu.", args->usr_id);
 }
 
 operation_status create_modify_journal_task(user_id id, message_id msg_id, char* journal_name, char* new_content, size_t new_content_size) {

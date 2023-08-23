@@ -97,10 +97,12 @@ message_content_node_data* extract_value_from_content(message_content* content, 
 
     message_content_node* node = content->head;
     while(node) {
-        log_info("IN WHILE");
+        log_info("IN WHILE %s %s", node->key, node->node_data->value);
         if(strcmp(node->key, key) == 0) {
             return node->node_data;
         }
+
+        node = node->next;
     }
 
     return NULL;

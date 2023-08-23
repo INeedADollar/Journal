@@ -70,7 +70,7 @@ message_header* parse_header(char* partial_message) {
 
 message_content* parse_content(char* content_str, size_t content_size) {
     char start_tag[] = "<journal_request_value>";
-    char end_tag[] = "</journal_request_value>\n";
+    char end_tag[] = "</journal_request_value>";
 
     char *target = NULL;
     char *current_pos = content_str;
@@ -82,6 +82,7 @@ message_content* parse_content(char* content_str, size_t content_size) {
     message_content_node* last = NULL;
 
     while(1) {
+        log_info(current_pos);
         char* key_end = strstr(current_pos, "=");
         if(!key_end) {
             break;
@@ -89,11 +90,13 @@ message_content* parse_content(char* content_str, size_t content_size) {
 
         *key_end = '\0';
         current_content_size -= strlen(current_pos); 
+        log_info("Current pos %s", current_pos);
 
         if (start = strstr(key_end + 1, start_tag)) {
             start += 23;
             current_content_size -= 23;
 
+            log_info("START");
             if (end = memmem((void*)start, current_content_size, (void*)end_tag, 24)) {
                 target = malloc((size_t)(end - start + 1));
                 memcpy(target, start, end - start);
@@ -102,12 +105,15 @@ message_content* parse_content(char* content_str, size_t content_size) {
         }
 
         if(!target) {
+            log_info("BREAK");
             break;
         }
 
         message_content_node* node = (message_content_node*)calloc(1, sizeof(message_content_node));
-        node->key = (char*)malloc(strlen(key_end));
+        node->key = (char*)malloc(strlen(current_pos) + 1);
         strcpy(node->key, current_pos);
+        
+        log_info("Node key %s %s", node->key, current_pos);
 
         node->node_data = (message_content_node_data*)calloc(1, sizeof(message_content_node_data));
         node->node_data->size = (size_t)(end - start);
@@ -122,7 +128,7 @@ message_content* parse_content(char* content_str, size_t content_size) {
         }
 
         last = node;
-        current_pos = end + 27;
+        current_pos = end + 25;
         target = NULL;
     }
 
@@ -134,24 +140,41 @@ message_content* parse_content(char* content_str, size_t content_size) {
 }
 
 
-message_t* parse_message(int socket_fd, char* message_str, message_header* header) {
-    if(!header) {
-        header = parse_header(message_str);
-        if(header == NULL) {
-            return NULL;
-        }
+message_header* get_message_header(char* message_str, message_header* header) {
+    if(header) {
+        return header;
     }
 
+    header = parse_header(message_str);
+    return header ? header : NULL;
+}
+
+
+message_t* parse_message(int socket_fd, char* message_str, message_header* header) {
+    log_info("PARSE");
+    message_header* new_header = get_message_header(message_str, header);
+    if(!new_header) {
+        log_info("NO HEADER");
+        return NULL;
+    }
+
+    log_info("%zu", new_header->length);
     srandom(time(NULL));
     message_t* message = (message_t*)malloc(sizeof(message));
     message->id = socket_fd * 1000 + (random() % 1000);
-    message->header = header;
+    message->header = new_header;
     message->content = NULL;
 
-    char* content_str = strstr(message_str, "Content\n");
-    log_info(message_str);
-    if(content_str && header->length > 0) {
-        message->content = parse_content(content_str + 8, header->length);
+    char* content_str = NULL;
+    if(!header) {
+        content_str = strstr(message_str, "Content\n");
+        log_info(message_str);
+        if(content_str && new_header->length > 0) {
+            message->content = parse_content(content_str + 8, new_header->length);
+        }
+    }
+    else {
+        message->content = parse_content(message_str, header->length);
     }
 
     return message;
