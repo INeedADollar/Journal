@@ -23,15 +23,15 @@ class JournalWindow(QWidget):
 
         self.__setup_ui()
 
-    def __set_disabled(self, enabled):
-        self.ui.leftPage.setReadOnly(enabled)
-        self.ui.leftPageNumber.setReadOnly(enabled)
-        self.ui.rightPage.setReadOnly(enabled)
-        self.ui.rightPageNumber.setReadOnly(enabled)
+    def __set_disabled(self, disabled):
+        self.ui.leftPage.setDisabled(disabled)
+        self.ui.leftPageNumber.setDisabled(disabled)
+        self.ui.rightPage.setDisabled(disabled)
+        self.ui.rightPageNumber.setDisabled(disabled)
 
-        self.ui.goBackward.setDisabled(enabled)
-        self.ui.saveChanges.setDisabled(enabled)
-        self.ui.goForward.setDisabled(enabled)
+        self.ui.goBackward.setDisabled(disabled)
+        self.ui.saveChanges.setDisabled(disabled)
+        self.ui.goForward.setDisabled(disabled)
 
     def __setup_ui(self):        
         self.ui = Ui_journalWindow()
@@ -43,14 +43,21 @@ class JournalWindow(QWidget):
         self.ui.verticalLayout_3.addWidget(self.status_bar)
 
         self.status_bar.showMessage("Retrieving journal content...")
+        self.ui.leftPageNumber.setReadOnly(True)
+        self.ui.rightPageNumber.setReadOnly(True)
+
         self.__set_disabled(True)
 
         if not self.read_only:
             self.ui.leftPage.textChanged.connect(self.__left_page_content_changed)
             self.ui.rightPage.textChanged.connect(self.__right_page_content_changed)
+        else:
+            self.ui.leftPage.setReadOnly(True)
+            self.ui.rightPage.setReadOnly(True)
         
         self.ui.goBackward.clicked.connect(self.__go_backward_on_click)
         self.ui.saveChanges.clicked.connect(self.__save_changes_on_click)
+        self.ui.backToJournals.clicked.connect(self.__show_journals_window)
         self.ui.goForward.clicked.connect(self.__go_forward_on_click)
 
         self.journal_received.connect(self.__handle_journal_retrieved)
@@ -72,6 +79,12 @@ class JournalWindow(QWidget):
         self.ui.leftPage.setText(self.journal_pages[self.left_page_number]["content"])
         self.ui.leftPageNumber.setText(f"{self.left_page_number + 1}")
         
+        if len(self.journal_pages) < self.left_page_number + 2:
+            self.journal_pages.append({
+                "content": "",
+                "modified": False
+            })
+
         self.ui.rightPage.setText(self.journal_pages[self.left_page_number + 1]["content"])
         self.ui.rightPageNumber.setText(f"{self.left_page_number + 2}")
 
@@ -80,7 +93,7 @@ class JournalWindow(QWidget):
             return
         
         self.left_page_number -= 2
-        if self.left_page_number == 1:
+        if self.left_page_number == 0:
             self.ui.goBackward.setDisabled(True)
 
         self.__set_pages()
@@ -103,6 +116,10 @@ class JournalWindow(QWidget):
         
         self.requester.modify_journal(self.journal_name, journal_zip_buffer.getvalue())
 
+    def __show_journals_window(self):
+        self.journals_window.show()
+        self.close()
+        
     def __add_new_pages(self):
         if len(self.journal_pages) % 2 == 1:
             self.journal_pages.append({
@@ -129,6 +146,9 @@ class JournalWindow(QWidget):
         if len(self.journal_pages) == 100:
             self.ui.goForward.setDisabled(True)
 
+        if self.left_page_number > 0:
+            self.ui.goBackward.setDisabled(False)
+
         self.__set_pages()
 
     def __message_received(self, message):
@@ -140,14 +160,14 @@ class JournalWindow(QWidget):
     def __handle_journal_retrieved(self, journal_content):
         with open("test.zip", "wb+") as f:
             f.write(journal_content)
-            
+
         try:
             with zipfile.ZipFile(io.BytesIO(journal_content)) as journal_zip:
                 for entry in journal_zip.infolist():
                     with journal_zip.open(entry) as open_entry:
                         content = open_entry.read()
                         self.journal_pages.append({
-                            "content": content,
+                            "content": content.decode(),
                             "modified": False
                         })
         except Exception as e:
@@ -157,11 +177,15 @@ class JournalWindow(QWidget):
 
         if not self.read_only:
             self.__set_disabled(False)
+            self.ui.goBackward.setDisabled(True)
         else:
-            self.ui.goForward.setEnabled(True)
+            if len(self.journal_pages) > 2:
+                self.ui.goForward.setEnabled(True)
+            self.ui.saveChanges.setDisabled(True)
 
-        self.ui.goBackward.setDisabled(True)
         self.__set_pages()
+
+        self.status_bar.showMessage("Journal loaded succesfully.", 3000)
 
     def __handle_retrieve_journal(self, message):
         if message["status"] == OperationStatus.OPERATION_FAIL:

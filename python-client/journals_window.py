@@ -108,10 +108,10 @@ class JournalsWindow(QWidget):
         self.hide()
 
     def __view_journal_on_click(self):
-        self.__show_journal()
+        self.__show_journal(True)
 
     def __edit_journal_on_click(self):
-        self.__show_journal(True)
+        self.__show_journal()
 
     def __exit_on_click(self):
         QApplication.exit(0)

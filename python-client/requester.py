@@ -27,6 +27,7 @@ class Requester(QObject):
         self.journals_window_callback = None
 
         self.id = -1
+        self.stop_requester = False
 
     # encoding problem when receiving bytes that are not text
     def __read_message(self):
@@ -112,7 +113,7 @@ class Requester(QObject):
         self.is_socket_connected = True
         self.__get_id()
 
-        while True:
+        while not self.stop_requester:
             message = self.__read_message()
             print(message)
             self.__handle_message(message)       
@@ -120,6 +121,10 @@ class Requester(QObject):
     def start(self):
         requester_thread = threading.Thread(target=self.__start)
         requester_thread.start()
+
+    def stop(self):
+        self.stop_requester = True
+        self.disconnect()
 
     def is_connected(self):
         return self.is_socket_connected

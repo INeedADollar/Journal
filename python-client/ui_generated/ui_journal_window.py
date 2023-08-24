@@ -46,6 +46,13 @@ class Ui_journalWindow(object):
 "}")
         self.saveChanges.setObjectName("saveChanges")
         self.horizontalLayout_2.addWidget(self.saveChanges)
+        self.backToJournals = QtWidgets.QPushButton(self.buttonContainer)
+        self.backToJournals.setMinimumSize(QtCore.QSize(0, 50))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.backToJournals.setFont(font)
+        self.backToJournals.setObjectName("backToJournals")
+        self.horizontalLayout_2.addWidget(self.backToJournals)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
         self.goForward = QtWidgets.QPushButton(self.buttonContainer)
@@ -123,6 +130,7 @@ class Ui_journalWindow(object):
         journalWindow.setWindowTitle(_translate("journalWindow", "Form"))
         self.goBackward.setText(_translate("journalWindow", "<--"))
         self.saveChanges.setText(_translate("journalWindow", "Save changes"))
+        self.backToJournals.setText(_translate("journalWindow", "Back to Journals"))
         self.goForward.setText(_translate("journalWindow", "-->"))
 
 
