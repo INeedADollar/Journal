@@ -43,7 +43,8 @@ class ImportDialog(QDialog):
         self.ui.zipFileChooser.setText(journal_zip_path[0])
         
     def __handle_button_click(self, button):
-        if button.text() == "Ok":
+        print("JREER", button.text())
+        if button.text() == "OK":
             self.journal_name = self.ui.journalName.text()
             self.journal_path = self.ui.zipFileChooser.text()
 

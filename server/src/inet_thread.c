@@ -160,6 +160,7 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 
 		read_message[received_len + new_content_size] = '\0';
 		log_info("read_message");
+
 		message_t* message = parse_message(client_socket_fd, read_message, NULL);
 		if(!message) {
 			log_error("Could not parse message from: %s, user_id: %lu, client_socket_id: %d.", read_message, header->client_id, client_socket_fd);
@@ -193,6 +194,10 @@ operation_status read_and_handle_client_command(fd_set* active_set, int client_s
 			size_t current_size = clients_data[client_socket_fd].buffered_content_size;
 			log_info("%zu current", current_size);
 			clients_data[client_socket_fd].buffered_content[current_size] = '\0';
+
+			FILE* file = fopen("test.b", "wb+");
+			fwrite(clients_data[client_socket_fd].buffered_content, clients_data[client_socket_fd].buffered_content_size, 1, file);
+			fclose(file);
 
 			message_t* message = parse_message(client_socket_fd, clients_data[client_socket_fd].buffered_content, clients_data[client_socket_fd].header);
 			clients_data[client_socket_fd].header = NULL;

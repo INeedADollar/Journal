@@ -1,9 +1,11 @@
 import typing
-from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal
 from ui_generated.ui_journal import Ui_journal
 from PyQt5.QtWidgets import QWidget
 
 class Journal(QWidget):
+    journal_selected = pyqtSignal(object)
+
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -35,5 +37,5 @@ class Journal(QWidget):
 
     def mousePressEvent(self, event):
         self.select_journal()
-        self.parentWidget.set_selected_journal(self)
+        self.journal_selected.emit(self)
         return super().mousePressEvent(event)

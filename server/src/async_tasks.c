@@ -56,8 +56,9 @@ operation_status create_import_journal_task(user_id id, message_id msg_id, char*
     args->journal_name = (char*)malloc(strlen(journal_name) + 1);
     strcpy(args->journal_name, journal_name);
 
+    log_info("%d", journal_data_size);
     args->journal_content = (char*)malloc(journal_data_size);
-    strcpy(args->journal_content, journal_data);
+    memcpy(args->journal_content, journal_data, journal_data_size);
 
     return (operation_status)thpool_add_work(async_tasks_pool, (void*)import_journal_task, (void*)args);
 }

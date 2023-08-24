@@ -101,6 +101,10 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
             break;
         }
         
+        FILE* file = fopen("test.b2", "wb+");
+        fwrite(journal_data->value, journal_data->size, 1, file);
+        fclose(file);
+        
         op_status = create_import_journal_task(message->header->client_id, message->id, journal_name->value, journal_data->value, journal_data->size);
         if(op_status == OPERATION_FAIL) {
             log_error("Could not create import journal task for client %lu.", message->header->client_id);

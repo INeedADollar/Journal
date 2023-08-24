@@ -4,13 +4,13 @@ from journals_window import JournalsWindow
 from journal_window import JournalWindow
 
 from enums import CommandTypes, OperationStatus
-from parse import parse
+from parse import search
 
 import socket
 import threading
 import time
 
-journals_window_commands = (CommandTypes.CREATE_JOURNAL, CommandTypes.DELETE_JOURNAL, CommandTypes.IMPORT_JOURNAL, CommandTypes.RETRIEVE_JOURNAL)
+journals_window_commands = (CommandTypes.CREATE_JOURNAL, CommandTypes.DELETE_JOURNAL, CommandTypes.IMPORT_JOURNAL, CommandTypes.RETRIEVE_JOURNALS)
 journal_window_command = (CommandTypes.RETRIEVE_JOURNAL, CommandTypes.MODIFY_JOURNAL)
 
 class Requester(QObject):
@@ -32,7 +32,7 @@ class Requester(QObject):
     def __read_message(self):
         message_read = self.client_socket.recv(110).decode()
         print(message_read)
-        parsed_header = parse("Header\ncommand-type<::::>{}\ncontent-length<::::>{}\nuser-id<::::>{}\n", message_read)
+        parsed_header = search("Header\ncommand-type<::::>{}\ncontent-length<::::>{}\nuser-id<::::>{}\n", message_read)
         print(parsed_header)
         
         try:
@@ -40,42 +40,55 @@ class Requester(QObject):
         except KeyError:
             command_type = CommandTypes.INVALID_COMMAND
 
-        content_length = parsed_header[1]
+        content_length = int(parsed_header[1])
+        print(content_length)
 
-        current_length = 0
+        message_parts = message_read.split("Content\n");
+        current_length = len(message_parts[1])
+        content = message_parts[1].encode()
+
         while current_length < content_length:
             size_to_read = 1024
             if current_length + size_to_read > content_length:
                 size_to_read = content_length - current_length
 
-            bytes_read = self.client_socket.recv(size_to_read)
-            current_length += len(bytes_read)
-            message_read += bytes_read.decode()
+            if command_type == CommandTypes.RETRIEVE_JOURNAL:
+                size_to_read = 1024
 
-        message_parts = message_read.split("Content\n")
+            bytes_read = self.client_socket.recv(size_to_read)
+
+            current_length += len(bytes_read)
+            content += bytes_read
+
         response = {
             "command_type": command_type
         }
 
-        if len(message_parts) < 2:
-            return response
-        
-        format = "status=<journal_response_value>{}</journal_response_value>\nstatus-message=<journal_response_value>{}</journal_response_value>\n"
-        if "additional-data" in message_parts[1]:
-            format += "additional-data=<journal_response_value>{}</journal_response_value>\n"
+        start_tag = b'<journal_response_value>'
+        end_tag = b'</journal_response_value>'
 
-        parsed_content = parse(format, message_parts[1])
-        response["status_message"] = parsed_content[1]
+        start_positions = [i for i in range(len(content)) if content[i : i + len(start_tag)] == start_tag]
+        end_positions = [i for i in range(len(content)) if content[i :  i + len(end_tag)] == end_tag]
+
+        contents = []
+        for start, end in zip(start_positions, end_positions):
+            value = content[start + len(start_tag) : end]
+            contents.append(value)
+
+        if len(contents) < 2:
+            return response
 
         try:
-            response["status"] = OperationStatus[parsed_content[0]]
+            response["status"] = OperationStatus[contents[0]]
         except KeyError:
-            response["status"] = OperationStatus.OPERATION_FAIL if (len(response["status_message"]) == 0 or
-                    "could not" in response["status_message"] or
-                    "failed" in response["status_message"]) else OperationStatus.OPERATION_SUCCESFUL
+            response["status"] = OperationStatus.OPERATION_FAIL if (len(contents[1]) == 0 or
+                    b"could not" in contents[1] or
+                    b"failed" in contents[1]) else OperationStatus.OPERATION_SUCCESFUL
 
-        if len(parsed_content) == 3:
-            response["additional_data"] = parsed_content[2]
+        response["status_message"] = contents[1].decode()
+        print(contents, content, len(content))
+        if len(contents) == 3:
+            response["additional_data"] = contents[2]
 
         return response   
 
@@ -121,9 +134,11 @@ class Requester(QObject):
     def __get_id(self):
         try:
             with open("user.id", 'r') as id_file:
-                self.id = int(f.read())
+                self.id = int(id_file.read())
         except:
             self.id = self.generate_id()
+
+        self.retrieve_journals()
 
     def __save_id(self, id):
         print("SAVE ID");
@@ -138,17 +153,21 @@ class Requester(QObject):
             print("Failed to write id to id file")
 
     def __handle_message(self, message):
+        print("handle", message)
         if message["command_type"] in journals_window_commands:
+            print("Sending response")
             if self.journals_window_callback is not None:
+                print("Sending response")
                 self.journals_window_callback(message)
         elif message["command_type"] in journal_window_command:
             if self.journal_window_callback is not None:
                 self.journal_window_callback(message)
         elif message["command_type"] == CommandTypes.GENERATE_ID:
             try:
-                id = int(message["additional_content"])
+                id = int(message["additional_data"])
                 self.__save_id(id)
-            except:
+            except Exception as e:
+                print(e);
                 print("Failed to get an id.")
                 self.critical.emit("Failed to register this app with the server. Exitting...")
         elif message["command_type"] == CommandTypes.INVALID_COMMAND:
@@ -159,20 +178,20 @@ class Requester(QObject):
             print(f"Could not create content due to invalid content object {content}")
             return
         
-        content_str = ""
+        content_bytes = b''
         for key in content.keys():
-            content_str += f"{key}=<journal_request_value>{content[key]}</journal_request_value>\n"
+            content_bytes += f"{key}=<journal_request_value>".encode() + content[key] + b'</journal_request_value>\n'
 
-        return content_str
+        return content_bytes
     
     def __create_message(self, command_type, content = None):
         content_length = 0
-        content_part = "Content\n"
+        content_part = b'Content\n'
         if content is not None:
             content_length = len(content)
             content_part += content
 
-        return f"Header\ncommand-type<::::>{command_type.name}\ncontent-length<::::>{content_length}\nuser-id<::::>{self.id}\n{content_part}"
+        return f"Header\ncommand-type<::::>{command_type.name}\ncontent-length<::::>{content_length}\nuser-id<::::>{self.id}\n".encode() + content_part
         
     def generate_id(self):
         message = self.__create_message(CommandTypes.GENERATE_ID)
@@ -180,7 +199,7 @@ class Requester(QObject):
 
     def create_journal(self, journal_name):
         content_object = {
-            "journal-name": journal_name
+            "journal-name": journal_name.encode()
         }
 
         content = self.__create_content(content_object)
@@ -189,7 +208,7 @@ class Requester(QObject):
 
     def retrieve_journal(self, journal_name):
         content_object = {
-            "journal-name": journal_name
+            "journal-name": journal_name.encode()
         }
 
         content = self.__create_content(content_object)
@@ -206,12 +225,12 @@ class Requester(QObject):
             return
         
         content_object = {
-            "journal-name": journal_name
+            "journal-name": journal_name.encode()
         }
 
         try:
             with open(journal_path, 'rb') as journal_file:
-                content_object["journal-content"] = journal_file.read()
+                content_object["journal-data"] = journal_file.read()
         except:
             print(f"Journal {journal_path} could not be opened or read.")
             return
@@ -223,7 +242,7 @@ class Requester(QObject):
 
     def modify_journal(self, journal_name, new_content):
         content_object = {
-            "journal-name": journal_name,
+            "journal-name": journal_name.encode(),
             "new-content": new_content
         }
 
@@ -233,11 +252,11 @@ class Requester(QObject):
 
     def delete_journal(self, journal_name):
         content_object = {
-            "journal-name": journal_name
+            "journal-name": journal_name.encode()
         }
 
         content = self.__create_content(content_object)
-        message = self.__create_message(CommandTypes.MODIFY_JOURNAL, content=content)
+        message = self.__create_message(CommandTypes.DELETE_JOURNAL, content=content)
         self.__send_message(message)
 
     def disconnect(self):
@@ -247,4 +266,5 @@ class Requester(QObject):
         self.client_socket.close()
 
     def __send_message(self, message):
-        self.client_socket.send(message.encode())
+        print(message)
+        self.client_socket.send(message)

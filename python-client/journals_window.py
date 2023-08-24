@@ -1,4 +1,5 @@
 from ui_generated.ui_journals_window import Ui_journalsWindow
+from PyQt5.QtCore import Qt, pyqtSignal
 from journal_window import JournalWindow
 from journal import Journal
 from import_dialog import ImportDialog
@@ -7,6 +8,11 @@ from PyQt5.QtWidgets import QWidget, QInputDialog, QMessageBox, QApplication
 from enums import CommandTypes, OperationStatus
 
 class JournalsWindow(QWidget):
+    journals_retrieved = pyqtSignal()
+    journal_created = pyqtSignal()
+    journal_deleted = pyqtSignal()
+    journal_imported = pyqtSignal()
+
     def __init__(self, requester, parent=None):
         super().__init__(parent=parent)
         self.requester = requester
@@ -25,6 +31,7 @@ class JournalsWindow(QWidget):
         self.setWindowTitle("Journals")
         self.resize(1000, 500)
         
+        self.ui.statusLabel.setAlignment(Qt.AlignCenter)
         self.ui.statusLabel.setText("Fetching journals...");
     
         self.ui.createJournal.clicked.connect(self.__create_journal_on_click)
@@ -34,7 +41,12 @@ class JournalsWindow(QWidget):
         self.ui.editJournal.clicked.connect(self.__edit_journal_on_click)
         self.ui.exit.clicked.connect(self.__exit_on_click)
 
-    def set_selected_journal(self, journal):
+        self.journals_retrieved.connect(self.__handle_journals_retrieved)
+        self.journal_created.connect(self.__add_new_journal)
+        self.journal_deleted.connect(self.__delete_journal)
+        self.journal_imported.connect(self.__add_new_journal)
+
+    def __set_selected_journal(self, journal):
         self.selected_journal = journal
 
     def __create_journal_on_click(self):
@@ -47,8 +59,8 @@ class JournalsWindow(QWidget):
             QMessageBox.information(self, "Empty input", "Journal name should not be empty.")
             return
         
-        self.processed_journal = journal_name
-        self.requester.create_journal(journal_name)
+        self.processed_journal = journal_name[0]
+        self.requester.create_journal(journal_name[0])
 
     def __show_no_journal_selected_message(self):
         message = "No journal selected. Create or import one."
@@ -70,6 +82,7 @@ class JournalsWindow(QWidget):
             journal_name = import_dialog.get_journal_name()
             journal_path = import_dialog.get_journal_path()
 
+            print(journal_name, journal_path)
             if journal_name == "" or journal_path == "":
                 QMessageBox.information(self, "Invalid input", "Input journal name and/or journal path.")
                 return
@@ -111,6 +124,7 @@ class JournalsWindow(QWidget):
         elif message["command_type"] == CommandTypes.IMPORT_JOURNAL:
             self.__handle_import_journal(message)
         elif message["command_type"] == CommandTypes.RETRIEVE_JOURNALS:
+            print("HERE")
             self.__handle_retrieve_journals(message)
 
     def __add_new_journal(self):
@@ -122,24 +136,29 @@ class JournalsWindow(QWidget):
 
         journal_widget = Journal(self)
         journal_widget.set_journal_name(self.processed_journal)
+        journal_widget.journal_selected.connect(self.__set_selected_journal)
 
-        i = journals_count / 10
-        last_row_count = journals_count % 10
-        if last_row_count == 0:
+        i = int(journals_count / 11)
+        last_row_count = (journals_count - 1) % 10
+        if journals_count > 0 and last_row_count == 0:
             i += 1
 
-        self.ui.gridLayout.addWidget(journal_widget, i, last_row_count + 1)
+        print(i, last_row_count, 'sada')
+        self.ui.gridLayout.addWidget(journal_widget, i, last_row_count)
+        self.processed_journal = None
+
+        QMessageBox.information(self, "Journal added", "Journal added succesfully.")
 
     def __handle_create_journal(self, message):
-        if message["operation_status"] == OperationStatus.OPERATION_FAIL:
+        if message["status"] == OperationStatus.OPERATION_FAIL:
             QMessageBox.information(self, "Creation failed", message["status_message"])
             self.processed_journal = None
 
-        self.__add_new_journal()
+        self.journal_created.emit()
 
     def __delete_journal(self):
         try:
-            index = self.journals.index(self)   
+            index = self.journals.index(self.processed_journal)   
         except ValueError:
             print(f"Could not find journal {self.processed_journal} in journals list.")
             self.processed_journal = None
@@ -151,46 +170,77 @@ class JournalsWindow(QWidget):
             self.processed_journal = None
             return
         
-        self.ui.gridLayout.removeWidget(journal_item)
-        journal_item.widget.hide()
+        print(journal_item)
+        journal_item.widget().hide()
+        self.ui.gridLayout.removeWidget(journal_item.widget())
+
+        rows = [i for i in range(self.ui.gridLayout.rowCount())]
+        columns = [j for j in range(self.ui.gridLayout.columnCount())]
+
+        for row, column in zip(rows, columns):
+            item = self.ui.gridLayout.itemAtPosition(row, column)
+            if item:
+                widget = item.widget()
+                self.ui.gridLayout.removeWidget(widget)
+                self.ui.gridLayout.addWidget(widget, row, column)
+
+        QMessageBox.information(self, "Journal", f"Journal {self.processed_journal} deleted succesfully.")
         self.processed_journal = None
+        self.selected_journal = None
 
     def __handle_delete_journal(self, message):
-        if message["operation_status"] == OperationStatus.OPERATION_FAIL:
+        if message["status"] == OperationStatus.OPERATION_FAIL:
             QMessageBox.information(self, "Deletion failed", message["status_message"])
             self.processed_journal = None
 
-        self.__delete_journal()
+        self.journal_deleted.emit()
 
     def __handle_import_journal(self, message):
-        if message["operation_status"] == OperationStatus.OPERATION_FAIL:
+        if message["status"] == OperationStatus.OPERATION_FAIL:
             QMessageBox.information(self, "Import failed", message["status_message"])
             self.processed_journal = None
             return
         
-        self.__add_new_journal()
+        self.journal_imported.emit()
 
     def __remove_status_label(self):
         self.ui.gridLayout.removeWidget(self.ui.statusLabel)
         self.ui.statusLabel.hide()
 
     def __handle_retrieve_journals(self, message):
-        self.journals = message.split(";")
+        self.journals = []
+        if "additional_data" in message.keys():
+            self.journals = message["additional_data"].decode().split(";")[:-1]
+
         if len(self.journals) == 0:
             self.ui.statusLabel.setText("There are no journals yet. Create or import one.")
             return 
         
+        self.journals_retrieved.emit()
+
+    def __handle_journals_retrieved(self):
         self.__remove_status_label()
 
         i = 0
-        for j, journal in enumerate(self.journals):
+        j = -1
+        for journal in self.journals:
             journalWidget = Journal(self)
-            if j % 10 == 0 and i > 0:
-                i += 1
+            journalWidget.set_journal_name(journal)
+            journalWidget.journal_selected.connect(self.__set_selected_journal)
 
+            j += 1
+            if j % 10 == 0 and j > 0:
+                i += 1
+                j = 0
+
+            print(i, j)
             self.ui.gridLayout.addWidget(journalWidget, i, j)
             journalWidget.show()
 
+        # for i in range(0, 20):
+        #     self.processed_journal = "asdfdsfd"
+        #     self.__add_new_journal()
+        
     def showEvent(self, event):
         return super().showEvent(event)
     

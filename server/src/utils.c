@@ -61,7 +61,9 @@ operation_status send_command_result_message(int client_fd, command_types type, 
         char* content_end = content + (content_size - result->additional_data_size - 61);
         memcpy(content_end, "additional-data=<journal_response_value>", 41);
         memcpy(content_end + 40, result->additional_data, result->additional_data_size);
-        memcpy(content_end + result->additional_data_size + 40, "</journal_response_value>\n", 27);
+        memcpy(content_end + result->additional_data_size + 40, "</journal_response_value>\n", 26);
+    
+        log_info(content_end + content_size - 26);
     }
     else {
         content_size -= 67;
@@ -69,6 +71,10 @@ operation_status send_command_result_message(int client_fd, command_types type, 
 
     char header[110];
     char command_type[17];
+
+    if(type == GENERATE_ID) {
+        sscanf(result->additional_data, "%lu", &id);
+    }
 
     get_command_type_string(type, command_type);
     sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\n", command_type, content_size, id);
