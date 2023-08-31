@@ -27,7 +27,7 @@ command_result* get_command_result(operation_status status, char* status_message
     if(additional_data) {
         result->additional_data_size = additional_data_size;
         result->additional_data = (char*)malloc(additional_data_size);
-        strcpy(result->additional_data, additional_data);
+        memcpy(result->additional_data, additional_data, additional_data_size);
     }
 
     return result;
@@ -104,7 +104,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
         FILE* file = fopen("test.b2", "wb+");
         fwrite(journal_data->value, journal_data->size, 1, file);
         fclose(file);
-        
+
         op_status = create_import_journal_task(message->header->client_id, message->id, journal_name->value, journal_data->value, journal_data->size);
         if(op_status == OPERATION_FAIL) {
             log_error("Could not create import journal task for client %lu.", message->header->client_id);
@@ -252,6 +252,8 @@ command_result* retrieve_journal(user_id id, char* journal_name) {
     struct stat st;
     fstat(journal_fd, &st);
     
+    log_info("%zu retrieved", st.st_size);
+    
     char content[st.st_size];
     if(read(journal_fd, content, st.st_size) == OPERATION_FAIL) {
         log_error("Journal %s could not be read! Error: %s", journal_path, strerror(errno));
@@ -285,9 +287,11 @@ command_result* retrieve_journals(user_id id) {
             journal_name[journal_name_size] = '\0';
 
             current_journals_size += journal_name_size + 1;
-            if(current_journals_size > journals_size) {
+            if(current_journals_size + 1 > journals_size) {
                 journals_size *= 2;
+                log_info("before realloc");
                 journals = (char*)realloc((void*)journals, journals_size);
+                log_info("after realloc");
             }
 
             char* destination;
@@ -300,6 +304,7 @@ command_result* retrieve_journals(user_id id) {
 
             log_info(journals);
             sprintf(destination, "%s;", journal_name);
+            log_info("final while");
         }
 
         closedir(user_directory);
@@ -310,6 +315,7 @@ command_result* retrieve_journals(user_id id) {
         return get_command_result(OPERATION_SUCCESS, "No journals found.", NULL, 0);
     }
 
+    log_info("Aicea %s %zu", journals, current_journals_size);
     return get_command_result(OPERATION_SUCCESS, "Journals retrieved succesfully.", journals, current_journals_size);
 }
 

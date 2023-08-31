@@ -1,3 +1,5 @@
+#include "logger.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,6 +7,7 @@
 #include <sys/un.h>
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 #include <pthread.h>
 
 #define BUFFER_SIZE 8192
@@ -169,7 +172,7 @@ void *unix_thread(void *args) {
 	
     unlink(SERVER_SOCK_FILE);
 	if ((fd = socket(PF_UNIX, SOCK_DGRAM, 0)) < 0) {
-		perror("socket");
+		log_error("socket");
 		ok = 0;
 	}
 
@@ -179,7 +182,7 @@ void *unix_thread(void *args) {
 		strcpy(addr.sun_path, SERVER_SOCK_FILE);
 		unlink(SERVER_SOCK_FILE);
 		if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-			perror("bind");
+			log_error("bind");
 			ok = 0;
 		}
 	}
@@ -195,19 +198,19 @@ void *unix_thread(void *args) {
     int gotLogin = 0;
 
 	while ((len = recvfrom(fd, buff, BUFFER_SIZE, 0, (struct sockaddr *)&from, &fromlen)) > 0) {
-		printf("recvfrom: %s\n", buff);
+		log_debug("recvfrom: %s", buff);
 
         if (GetCommandAndValue(buff, command, value) != 0) {
-            printf("GetCommandAndValue error\n");
-            printf("buff = %s\n", buff);
-            printf("command = %s\n", command);
-            printf("value = %s\n", value);
+            log_error("GetCommandAndValue error");
+            log_debug("buff = %s", buff);
+            log_debug("command = %s", command);
+            log_debug("value = %s", value);
             continue;
         }
 
-        printf("buff = %s\n", buff);
-        printf("command = %s\n", command);
-        printf("value = %s\n", value);
+        log_debug("buff = %s", buff);
+        log_debug("command = %s", command);
+        log_debug("value = %s", value);
 
         strcpy(buff, "ok\0");
 
@@ -227,32 +230,32 @@ void *unix_thread(void *args) {
         if (strcmp(command, "login") == 0 && gotLogin == 0) {
             ret = TryLogin(name, password);
             if (ret == 0) {
-                printf("Logged in successfuly\n");
-                strcpy(buff, "Logged in successfuly\n");
+                log_info("Logged in successfuly");
+                strcpy(buff, "Logged in successfuly");
                 gotLogin = 1;
             } else {
-                strcpy(buff, "Failed login\n");
-                printf("Failed login %d\n", ret);
+                strcpy(buff, "Failed login");
+                log_error("Failed login %d", ret);
             }
         }
 
         //4. cerere resetare nume si parola
         if (gotLogin == 1 && strcmp(command, "reset") == 0 && strlen(name) > 0 && strlen(password) > 0) {
             ChangeAdminInfo(name, password);
-            printf("gotreset");
+            log_debug("gotreset");
         }
 
         //5. cerere verificare putere parola
         if (strcmp(command, "passpow") == 0) {
             ret = GetPasswordPower(password);
-            printf("password power = %d\n", ret);
-            sprintf(buff, "Power = %d\n", ret);
+            log_debug("password power = %d", ret);
+            sprintf(buff, "Power = %d", ret);
         }
 
         //6. cerere profil nume
         if (strcmp(command, "profile") == 0) {
             GetNameProfile(name, value);
-            printf("name profile: %s\n", value);
+            log_debug("name profile: %s", value);
             strcpy(buff, value);
         }
 
@@ -262,14 +265,14 @@ void *unix_thread(void *args) {
         }
 
 		if (send(fd, buff, strlen(buff)+1, 0) == -1) {
-			perror("send");
+			log_error("send %s", strerror(errno));
 			//ok = 0;
 		}
-		printf ("sent iccExchangeAPDU\n");
+		log_info ("sent iccExchangeAPDU");
 
 		ret = sendto(fd, buff, strlen(buff)+1, 0, (struct sockaddr *)&from, fromlen);
 		if (ret < 0) {
-			perror("sendto");
+			log_error("sendto %s", strerror(errno));
 			break;
 		}
 	}

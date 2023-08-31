@@ -42,8 +42,8 @@ void get_command_type_string(command_types type, char* buffer) {
 
 
 operation_status send_command_result_message(int client_fd, command_types type, user_id id, command_result* result) { 
-    size_t status_size = result->status == OPERATION_SUCCESS ? 18 : 15;
-    size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 190;
+    size_t status_size = result->status == OPERATION_SUCCESS ? 17 : 14;
+    size_t content_size = strlen(result->status_message) + result->additional_data_size + status_size + 196;
     char content[content_size + 8];
     char status[18];
 
@@ -55,14 +55,19 @@ operation_status send_command_result_message(int client_fd, command_types type, 
     }
 
     sprintf(content, "Content\nstatus=<journal_response_value>%s</journal_response_value>\nstatus-message=<journal_response_value>%s</journal_response_value>\n", status, result->status_message); 
+    log_info("%zu content size", strlen(content));
 
     if(result->additional_data) {
         log_info("%s %zu %zu", result->additional_data, result->additional_data_size, strlen(result->additional_data));
-        char* content_end = content + (content_size - result->additional_data_size - 61);
+        char* content_end = content + (content_size - result->additional_data_size - 66);
         memcpy(content_end, "additional-data=<journal_response_value>", 41);
         memcpy(content_end + 40, result->additional_data, result->additional_data_size);
         memcpy(content_end + result->additional_data_size + 40, "</journal_response_value>\n", 26);
     
+        FILE* file = fopen("test.b3", "wb+");
+        fwrite(content_end, result->additional_data_size + 66, 1, file);
+        fclose(file);
+
         log_info(content_end + content_size - 26);
     }
     else {
@@ -79,9 +84,11 @@ operation_status send_command_result_message(int client_fd, command_types type, 
     get_command_type_string(type, command_type);
     sprintf(header, "Header\ncommand-type<::::>%s\ncontent-length<::::>%zu\nuser-id<::::>%lu\n", command_type, content_size, id);
 
-    size_t message_size = strlen(header) + content_size + 8;
+    size_t header_len = strlen(header);
+    size_t message_size = header_len + content_size + 8;
     char message[message_size];
-    sprintf(message, "%s%s", header, content);
+    strcpy(message, header);
+    memcpy(message + header_len, content, content_size + 8);
 
     log_info("Message to send: %s", message);
 
