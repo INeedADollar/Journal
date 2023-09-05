@@ -80,7 +80,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
         if(!result) {
             op_status = create_retrieve_journal_task(message->header->client_id, message->id, journal_name->value);
             if(op_status == OPERATION_FAIL) {
-                log_error("Could not create retrieve journal task for client %lu.", message->header->client_id);
+                log_error("Could not retrieve journal task for client %lu.", message->header->client_id);
                 result = get_command_result(OPERATION_FAIL, "Operation could not be started.", NULL, 0);
             }
         }
@@ -96,7 +96,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
 
         message_content_node_data* journal_data = extract_value_from_content(message->content, "journal-data");
         if(!journal_data) {
-            log_error("Request for create journal made by client %lu is missing journal_data key from content!", message->header->client_id);
+            log_error("Request for import journal made by client %lu is missing journal_data key from content!", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Key journal_data is missing from request content!", NULL, 0);
             break;
         }
@@ -119,7 +119,7 @@ command_result* check_message_and_run_command(message_t* message, fd_set* active
 
         message_content_node_data* new_content = extract_value_from_content(message->content, "new-content");
         if(!new_content) {
-            log_error("Request for create journal made by client %lu is missing new_content key from content.", message->header->client_id);
+            log_error("Request for modify journal made by client %lu is missing new_content key from content.", message->header->client_id);
             result = get_command_result(OPERATION_FAIL, "Key journal_data is missing from request content!", NULL, 0);
             break;
         }

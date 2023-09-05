@@ -57,7 +57,7 @@ void notif_callback(response* resp, request_type type) {
 
 void print_controls() {
     printf("\nc - create journal\ni - import journal\ns - show journal\nd - delete journal\ne - exit");
-    printf("\nc i [journal_nr]s [journal_nr]d [journal_nr]e\n");    
+    printf("\nc i [journal_nr]s [journal_nr]d e\n");    
 }
 
 
@@ -258,6 +258,7 @@ void show_journal_screen(size_t journal_nr) {
         return;
     }
 
+    sleep(100);
     if(resp->status == FAIL) {
         puts(resp->status_message);
         delete_response(resp);
@@ -267,15 +268,17 @@ void show_journal_screen(size_t journal_nr) {
 
     char journal_path[512];
     sprintf(journal_path, "./.tmp/%s.zip", journals[journal_nr]);
-    FILE* journal_zip = fopen("./.tmp/%s.zip", "w+");
+    log_info(journal_path);
+    FILE* journal_zip = fopen(journal_path, "w+");
     if(!journal_zip) {
         puts("Something bad happened. Returning to main menu...\n");
+        log_info(strerror(errno));
         delete_response(resp);
         sleep(1);
         return;
     }
 
-    fwrite((void*)resp->data, 1, resp->data_size, journal_zip);
+    fwrite((void*)resp->data, resp->data_size, 1, journal_zip);
     fclose(journal_zip);
 
     struct stat file_stat;
@@ -293,7 +296,7 @@ void show_journal_screen(size_t journal_nr) {
     printf("Opening %s\n...", journals[journal_nr]);
 
     char command[600];
-    sprintf(command, "/usr/bin/python3 ./journal_editor/editor.py --journal %s", journal_path);
+    sprintf(command, "/usr/bin/python3 ./inet-client/journal_editor/editor.py --journal %s", journal_path);
     FILE* editor_output = popen(command, "r");
     if(!editor_output) {
         puts("Could not open journal editor. Returning to main menu...");
@@ -419,7 +422,8 @@ void get_and_handle_choice() {
         show_import_journal_screen();
         break;
     case 's':
-        show_journal_screen(journal_nr);
+        show_journal_screen(journal_nr - 1);
+        break;
     case 'd':
         show_delete_journal_screen(journal_nr);
         break;
@@ -432,6 +436,7 @@ void get_and_handle_choice() {
         break;
     }
 
+    //sleep(100);
     log_info("FINal handle");
 }
 

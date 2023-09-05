@@ -245,9 +245,11 @@ response* get_response() {
     }
 
     additional_data += 40;
-    char* additional_data_end_tag = memmem((void*)additional_data, content_length - (size_t)(content - additional_data),
-        (void*)"</journal_response_value>\n", 27);
+    char* additional_data_end_tag = memmem((void*)additional_data, content_length - (size_t)(additional_data - content),
+        (void*)"</journal_response_value>\n", 26);
 
+    log_info(additional_data_end_tag);
+    log_info("%zu daa %s", content_length - (size_t)(additional_data - content), additional_data_end_tag);
     if(!additional_data_end_tag) {
         resp->data = NULL;
         resp->data_size = 0;
@@ -255,10 +257,14 @@ response* get_response() {
         return resp;
     }
 
-    resp->data_size = (size_t)(additional_data_end_tag - additional_data);
+    resp->data_size = (size_t)(additional_data_end_tag - additional_data) + 2;
     resp->data = (char*)malloc(resp->data_size);
     memcpy((void*)resp->data, (void*)additional_data, resp->data_size);
     resp->data[resp->data_size] = '\0';
+
+    FILE* file = fopen("file.txt", "w+");
+    fwrite(resp->data, resp->data_size, 1, file);
+    fclose(file);
 
     return resp;
 }
@@ -359,7 +365,7 @@ response* retrieve_journal(char* journal_name) {
     sprintf(content, "journal-name=<journal_request_value>%s</journal_request_value>\n", journal_name);
 
     size_t request_message_size;
-    char* request_message = get_request_message(RETRIEVE_JOURNAL, content, 0, &request_message_size);
+    char* request_message = get_request_message(RETRIEVE_JOURNAL, content, strlen(content), &request_message_size);
     send_request(request_message, request_message_size);
 
     return get_response();

@@ -18,7 +18,8 @@ compile-server: server
    
 compile-unix-client: unix-client
 	@echo Compilation of unix client started
-	${CC} ${CFLAGS} -o ./unix-client/build/client ./unix-client/client.c
+	mkdir ./unix-client/build || true
+	${CC} ${CFLAGS} -o ./unix-client/build/client ./unix-client/src/client.c
 
 compile-inet-client: inet-client
 	@echo Compilation of inet client started

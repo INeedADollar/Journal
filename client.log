@@ -1,80 +1,46 @@
-2023-09-05 16:37:27 INFO: Fetching journals. Please wait...
-2023-09-05 16:37:27 INFO: Header
+2023-09-05 14:26:31 INFO: Fetching journals. Please wait...
+2023-09-05 14:26:31 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
 content-length<::::>0
 user-id<::::>692643178
 Content
 
-2023-09-05 16:37:27 INFO: Header
+2023-09-05 14:26:31 INFO: Header
 command-type<::::>RETRIEVE_JOURNALS
-content-length<::::>274
+content-length<::::>251
 user-id<::::>692643178
 Content
-2023-09-05 16:37:27 INFO: 12
-2023-09-05 16:37:27 INFO: status=<jour
-2023-09-05 16:37:27 INFO: 274 274
-2023-09-05 16:37:27 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-09-05 14:26:31 INFO: 12
+2023-09-05 14:26:31 INFO: status=<jour
+2023-09-05 14:26:31 INFO: 251 251
+2023-09-05 14:26:31 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journals retrieved succesfully.</journal_response_value>
-additional-data=<journal_response_value>Primavara;sagdsg;Iarna;Toamna;</journal_response_value>
-ÄQÿÿ
-2023-09-05 16:37:27 INFO: </journal_response_value>
-ÄQÿÿ
-2023-09-05 16:37:27 INFO: 64 daa </journal_response_value>
-ÄQÿÿ
-2023-09-05 16:37:27 INFO: Primavara;sagdsg;Iarna;Toamna;</ sad
-2023-09-05 16:38:45 INFO: Chosen command: i
-2023-09-05 16:38:53 DEBUG: Chosen journal path: /mnt/e/Projects/Proiect PCD/Journal/test.zip
-2023-09-05 16:38:53 DEBUG: Opened zip file: /mnt/e/Projects/Proiect PCD/Journal/test.zip
-
-2023-09-05 16:38:53 DEBUG: Size 167
-2023-09-05 16:38:53 DEBUG: Size 167
-2023-09-05 16:38:53 DEBUG: Size 167
-2023-09-05 16:38:53 DEBUG: Size 167
-2023-09-05 16:38:53 DEBUG: Zip loaded succesfully. 167
-2023-09-05 16:38:53 DEBUG: Before strcpy
-2023-09-05 16:38:53 DEBUG: After strcpy
-2023-09-05 16:38:53 INFO: HERER
-2023-09-05 16:38:53 DEBUG: 297 167
-2023-09-05 16:38:53 INFO: Header
-command-type<::::>IMPORT_JOURNAL
-content-length<::::>297
-user-id<::::>692643178
-Content
-journal-name=<journal_request_value>paffdsi</journal_request_value>
-journal-data=<journal_request_value>PK
-2023-09-05 16:38:53 INFO: Header
-command-type<::::>IMPORT_JOURNAL
-content-length<::::>175
-user-id<::::>692643178
-Content
-2023-09-05 16:38:53 INFO: 15
-2023-09-05 16:38:53 INFO: status=<journal
-2023-09-05 16:38:53 INFO: 175 175
-2023-09-05 16:38:53 INFO: OPERATION_SUCCESS</journal_response_value>
-status-message=<journal_response_value>Journal imported succesfully.</journal_response_value>
-
-2023-09-05 16:38:54 INFO: FINal handle
-2023-09-05 16:39:10 INFO: Chosen command: s
-2023-09-05 16:39:10 INFO: Header
+additional-data=<journal_response_value>Toamna;</journal_response_value>
+Üªï¿½
+2023-09-05 14:26:31 INFO: </journal_response_value>
+Üªï¿½
+2023-09-05 14:26:31 INFO: 41
+2023-09-05 14:26:31 INFO: Toamna; sad
+2023-09-05 14:26:33 INFO: Chosen command: s
+2023-09-05 14:26:33 INFO: Header
 command-type<::::>RETRIEVE_JOURNAL
-content-length<::::>68
+content-length<::::>67
 user-id<::::>692643178
 Content
-journal-name=<journal_request_value>paffdsi</journal_request_value>
+journal-name=<journal_request_value>Toamna</journal_request_value>
 
-2023-09-05 16:39:10 INFO: Header
+2023-09-05 14:26:33 INFO: Header
 command-type<::::>RETRIEVE_JOURNAL
-content-length<::::>408
+content-length<::::>461
 user-id<::::>692643178
 Content
-2023-09-05 16:39:10 INFO: 13
-2023-09-05 16:39:10 INFO: status=<journ
-2023-09-05 16:39:10 INFO: 408 408
-2023-09-05 16:39:10 INFO: OPERATION_SUCCESS</journal_response_value>
+2023-09-05 14:26:33 INFO: 13
+2023-09-05 14:26:33 INFO: status=<journ
+2023-09-05 14:26:33 INFO: 461 461
+2023-09-05 14:26:33 INFO: OPERATION_SUCCESS</journal_response_value>
 status-message=<journal_response_value>Journal retrieved succesfully.</journal_response_value>
 additional-data=<journal_response_value>PK
-2023-09-05 16:39:10 INFO: </journal_response_value>
-
-2023-09-05 16:39:10 INFO: 199 daa </journal_response_value>
-
-2023-09-05 16:39:12 INFO: Stopping client...
+2023-09-05 14:26:33 INFO: </journal_response_value>
+ï¿½
+2023-09-05 14:26:33 INFO: 252
+2023-09-05 14:26:34 INFO: FINal handle

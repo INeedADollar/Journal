@@ -16,7 +16,7 @@ void stop_client(int signal) {
 int main(int argc, char * argv[]) {
 	signal(SIGINT, stop_client);
 	initialize_log_file("client.log");
-	init_requests("127.0.0.2", 5000);
+	init_requests("130.61.59.146", 5000);
 	init_interface();
 
 	return 0;

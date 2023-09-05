@@ -30,10 +30,10 @@ class JournalWindow(QWidget):
         self.ui.goForward.clicked.connect(self.__go_forward_on_click)
 
     def __set_pages(self):
-        self.ui.leftPage(self.journal_pages[self.left_page_number])
+        self.ui.leftPage.setText(self.journal_pages[self.left_page_number])
         self.ui.leftPageNumber.setText(f"{self.left_page_number + 1}")
         
-        self.ui.rightPage(self.journal_pages[self.left_page_number + 1])
+        self.ui.rightPage.setText(self.journal_pages[self.left_page_number + 1])
         self.ui.rightPageNumber.setText(f"{self.left_page_number + 2}")
 
     def __go_backward_on_click(self):
@@ -82,10 +82,14 @@ class JournalWindow(QWidget):
                 for entry in journal_zip.infolist():
                     with journal_zip.open(entry) as open_entry:
                         content = open_entry.read()
-                        self.journal_pages.append(content)
+                        self.journal_pages.append(content.decode())
+
+            if len(self.journal_pages) % 2 == 1:
+                self.journal_pages.append("")
         except:
             self.status_bar.showMessage("Something bad happened while loading journal file.")
             QApplication.exit(0)
             self.__add_new_pages()
 
+        self.status_bar.clearMessage()
         self.__set_pages()
